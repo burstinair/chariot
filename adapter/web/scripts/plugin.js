@@ -19,18 +19,18 @@
                 };
             }
             options.title = options.title || "";
-            options.tip = options.tip || "»∑∂®¬£ø";
+            options.tip = options.tip || "Á°ÆÂÆöÂêóÔºü";
             options.modal = options.modal == false ? false : true;
             var dialog = $('<div class="dialog_confirm" title=' + options.title + '>' + options.tip + '</div>').css('overflow', 'visible');
             var buttons = [];
             buttons.push({
-                text: "»∑∂®",
+                text: "Á°ÆÂÆö",
                 click: options.okfunc || function () {
                     $(this).dialog("close");
                 }
             });
             buttons.push({
-                text: "»°œ˚",
+                text: "ÂèñÊ∂à",
                 click: options.cancelfunc || function () {
                     $(this).dialog("close");
                 }
@@ -62,7 +62,7 @@
                 waitdialog.dialog("close");
                 $.waiting._isOpen = false;
             } else if(cmd == "show") {
-                options.tip = options.tip || "«Îµ»¥˝...";
+                options.tip = options.tip || "ËØ∑Á≠âÂæÖ...";
                 $("span", waitdialog).text(options.tip);
                 if(!$.waiting._isOpen) {
                     $.waiting._isOpen = true;

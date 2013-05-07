@@ -8,9 +8,9 @@ $("input:submit, input[type=button]").button()
 $("input:text, input:password, textarea").css("border", "1px solid #ccc").css("cursor", "text");
 $("a").css("cursor", "pointer");
 $(".nicknameinput").val($.cookie('nickname') || '');
-var _render_shadow = true;
-$("#render_shadow").change(function () {
-    _render_shadow = $("#render_shadow").is(":checked");
+var _use_webgl = $("#use_webgl").is(":checked");
+$("#use_webgl").change(function () {
+    _render_shadow = $("#use_webgl").is(":checked");
 });
 
 //Console
@@ -138,6 +138,9 @@ jcn.socket.on("game_start", function(data) {
                 keyStatus |= sign;
                 e.stopPropagation();
                 e.preventDefault();
+                if(keyCapture) {
+                    jcn.socket.emit("keystatus", keyStatus.toString(16));
+                }
             }
         });
         $('body').keyup(function (e) {
@@ -146,43 +149,34 @@ jcn.socket.on("game_start", function(data) {
                 keyStatus &= ~sign;
                 e.stopPropagation();
                 e.preventDefault();
+                if(keyCapture) {
+                    jcn.socket.emit("keystatus", keyStatus.toString(16));
+                }
             }
         });
-        keyCapture = setInterval(function() {
-            if(alive) {
-                jcn.socket.emit("keystatus", keyStatus.toString(16));
-            }
-        }, 100);
+        keyCapture = true;
         $(".room").hide();
         $(".game").show();
         $("body").animate({scrollTop: $(".game .actions").offset().top}, 500);
     }
 });
-//var aud_get_item = new Audio("/audio/get_item.mp3");
 jcn.socket.on("game_refresh", function (data) {
-    for(var i = 0; i < data.ev.length; ++i) {
-        if(data.ev[i] == "gi") {
-            //aud_get_item.currentTime = 0;
-            //aud_get_item.play();
-            new Audio("/audio/get_item.mp3").play();
-        } else {
-            
-        }
-    }
-    var res = jcg.draw($(".gamewindow"), data, room, {render_shadow: _render_shadow});
+    var res = jcg.draw($(".gamewindow"), data, room, {use_webgl: _use_webgl});
     if(alive && data.pls[data.idx].hp == 0) {
         alive = false;
         jcn.socket.emit("keystatus", 0);
     }
 });
 jcn.socket.on("game_end", function () {
-    clearInterval(keyCapture);
+    //clearInterval(keyCapture);
+    keyCapture = null;
     $('body').unbind('keyup').unbind('keydown');
     $(".game").hide();
     $(".room").show();
 });
 $(".game .quitbutton").click(function() {
-    clearInterval(keyCapture);
+    //clearInterval(keyCapture);
+    keyCapture = null;
     $('body').unbind('keyup').unbind('keydown');
     jcn.request("退出游戏", "quit", null, function () {
         room = null;

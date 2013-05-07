@@ -1,6 +1,8 @@
 var express = require('express'),
-    app = express.createServer(),
-    io = require('socket.io').listen(app),
+    http = require('http'),
+    app = express(),
+    server = http.Server(app),
+    io = require('socket.io').listen(server),
     socket = require('socket.io').Socket;
 
 //For Heroku  
@@ -21,7 +23,7 @@ var adapter_web = {
         io.sockets.emit(name, data);
     },
     start: function (options) {
-        app.listen(options.port);
+        server.listen(options.port);
         app.get('/', function (req, res) {
             console.log('req');
             res.sendfile(__dirname + '/web/default.html');

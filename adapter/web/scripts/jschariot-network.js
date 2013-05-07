@@ -2,7 +2,7 @@
     var socket = io.connect();
     socket.on("disconnect", function () {
         $.confirm({
-            tip: "与服务器连接断开，点击确定或取消刷新。",
+            tip: "与服务器连接断开。",
             okfunc: function () {
                 location = location.href;
             },

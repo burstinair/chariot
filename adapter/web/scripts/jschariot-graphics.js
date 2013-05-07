@@ -399,7 +399,7 @@ var _camera = function (vport, position) {
                 var rate = this.focal_length / (this.focal_length + p.z);
                 return {x: p.x * rate + this.vport_width / 2, y: p.y * rate + this.vport_height / 2, z: p.z};
             },
-            transform: function (points, render_shadow) {
+            transform: function (points) {
                 if(points.length == 0)
                     return points;
                 var res = [];
@@ -422,31 +422,6 @@ var _camera = function (vport, position) {
                     }
                 }
                 res.color = points.color || _color('white');
-                
-                //Shadow
-                if(render_shadow && false) {
-                    var nearx = 0, neary = 0, farx = 0, fary = 0;
-                    for(var i = 0; i < near.length; i++) {
-                        nearx += near[i].x;
-                        neary += near[i].y;
-                    }
-                    nearx /= near.length;
-                    neary /= near.length;
-                    for(var i = 0; i < far.length; i++) {
-                        farx += far[i].x;
-                        fary += far[i].y;
-                    }
-                    farx /= far.length;
-                    fary /= far.length;
-                    var nearz = near[0].z, farz = far[0].z;
-                    var fill_color = this.graphics.createLinearGradient(nearx, neary, farx, fary);
-                    //$.log(res.color.mask('white', 0.2).toString(), res.color.toString(), res.color.mask('black', 0.2).toString());
-                    //$.log(nearx, neary, farx, fary);
-                    fill_color.addColorStop(0, res.color.mask('white', 0.05).toString());
-                    fill_color.addColorStop(0.5, res.color.toString());
-                    fill_color.addColorStop(1, res.color.mask('black', 0.05).toString());
-                    res.color = fill_color;
-                }
                 
                 return res;
             },
@@ -568,7 +543,7 @@ window.jschariot_graphics = {
             map.draw_background(cam);
             $.each(cam.adjust(map.gen_wall()), function () {
                 $.array_each(this, function () {
-                    cam.drawunit(cam.transform(this, options.render_shadow));
+                    cam.drawunit(cam.transform(this));
                 });
             });
         }
@@ -583,7 +558,7 @@ window.jschariot_graphics = {
             });
         });
         $.each(_shapes, function () {
-            cam.drawunit(cam.transform(this, options.render_shadow));
+            cam.drawunit(cam.transform(this));
         });
         
         //map, status

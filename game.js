@@ -366,7 +366,7 @@ Game.prototype.run = function () {
         }
         //车-导弹
         for(var j = 0; j < world.missiles.length; j++) {
-            if(world.missiles[j].player != i && hit(world.cars[i], world.missiles[j], 70)) {
+            if(world.missiles[j].player != i && hit(world.cars[i], world.missiles[j], 100)) {
                 if(!ms) {
                     ms = true;
                     events.push("ms");

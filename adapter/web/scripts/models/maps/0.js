@@ -7,7 +7,22 @@ for(var i = 0; i < 4; i++) {
     _items_cache.push(_img);
 }
 
+var boxes_data = [];
+
 jcg.set_map_model(0, {
+    initialize: function (playercount) {
+        var _c = Math.PI * 2 / playercount;
+        for(var i = 0; i < playercount; i++) {
+            boxes_data.push({
+                x: Math.sin(_c * i) * 1200,
+                z: -Math.cos(_c * i) * 1200
+            });
+            boxes_data.push({
+                x: Math.sin(_c * i) * 600,
+                z: -Math.cos(_c * i) * 600
+            });
+        }
+    },
     gen_wall: function () {
         var res = [];
         var wall = jcg.plane(4300, 200);
@@ -32,7 +47,7 @@ jcg.set_map_model(0, {
         jcg.yaw(res, data.d);
         jcg.move(res, data.x, -5, data.z);
         if(data.v)
-            res.color = jcg.color('#ddd');
+            res.color = jcg.color('#d55');
         return res;
     },
     gen_missile: function (data) {
@@ -42,10 +57,11 @@ jcg.set_map_model(0, {
         jcg.move(res, data.x, -100, data.z);
         return res;
     },
-    gen_box: function (data) {
+    gen_box: function (index) {
         var res = jcg.box(50, 50, 50);
-        jcg.yaw(res, data.d);
-        jcg.move(res, data.x, -100, data.z);
+        jcg.yaw(res, 50);
+        //jcg.move(res, boxes_data[index].x, -100, boxes_data[index].z);
+        jcg.move(res, index.x, -100, index.z);
         return res;
     },
     draw_background: function (cam) {

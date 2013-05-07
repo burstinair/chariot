@@ -117,6 +117,7 @@ Game.prototype.start = function () {
 Game.prototype.end = function () {
     clearInterval(this.ticker);
     this.room.game = null;
+    this.room.is_in_game = false;
     for(var i = 0; i < this.room.players.length; i++) {
         if(this.room.players[i].isAI) {
             this.room.players.splice(i, 1);

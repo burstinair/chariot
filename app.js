@@ -15,6 +15,7 @@ Network.on('connection', function (socket) {
                 var player = new Player(socket, data);
             }
             socket.set('playerinfo', player, function () {
+                player.status = "未准备";
                 var room = new Room(player.name + '的房间');
                 socket.emit("reply_create", {suc: true, data: room.gen_msg()});
                 room.add_player(player);
@@ -30,7 +31,10 @@ Network.on('connection', function (socket) {
                 var room = Room.find(data.id);
                 if(room == null) {
                     socket.emit("replay_join", {suc: false, data: '房间不存在。'});
+                } else if(room.is_in_game) {
+                    socket.emit("replay_join", {suc: false, data: '房间正在游戏中。'});
                 } else {
+                    player.status = "未准备";
                     socket.emit("reply_join", {suc: true, data: room.gen_msg()});
                     player.room = room;
                     room.add_player(player);

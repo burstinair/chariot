@@ -62,7 +62,9 @@ Room.prototype.check_start_game = function () {
     }
     if(i == this.players.length && i > 1) {
         this.game = new Game(this);
+        this.is_in_game = true;
         this.game.start();
+        Room.refresh();
     }
 }
 Room.prototype.refresh = function () {

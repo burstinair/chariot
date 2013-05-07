@@ -1,0 +1,56 @@
+<html>
+    <head>
+        <title>战车</title>
+        <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+        <link rel="stylesheet" type="text/css" href="./styles/jquery-ui-1.8.16.custom.css" />
+        <link rel="stylesheet" type="text/css" href="./styles/default.css" />
+        <script type="text/javascript" src="./scripts/jquery-1.6.2.min.js"></script>
+        <script type="text/javascript" src="./scripts/socket.io.min.js"></script>
+        <script type="text/javascript" src="./scripts/jschariot-network.js"></script>
+        <script type="text/javascript" src="./scripts/jschariot-graphics.js"></script>
+        <script type="text/javascript" src="./scripts/jschariot-ui.js"></script>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                战车
+            </div>
+            <div class="hall">
+                <div class="actions">
+                    <span>昵称：</span>
+                    <input class="nicknameinput" />
+                    <input type="button" value="加入" class="joinbutton" />
+                    <input type="button" value="创建" class="createbutton" />
+                </div>
+                <div class="roomlist">
+                </div>
+            </div>
+            <div class="room">
+                <div class="actions">
+                    <span class="roomtitle">xxx的房间</span>
+                    <input type="button" value="退出" class="quitbutton" />
+                    <input type="button" value="准备" class="readybutton" />
+                    <input type="button" value="添加AI" class="addaibutton" />
+                </div>
+                <div class="playerlist">
+                    <div class="playerlist_item">
+                    </div>
+                </div>
+            </div>
+            <div class="game">
+                <div class="actions">
+                    <span class="roomtitle">xxx的房间</span>
+                    <input type="button" value="退出" class="quitbutton" />
+                    <input type="checkbox" id="render_shadow" /><label for="render_shadow">阴影</label>
+                </div>
+                <div class="gamecontainer">
+                    <div class="playerinfo"></div>
+                    <canvas class="gamewindow" width="920px" height="600px"></canvas>
+                </div>
+            </div>
+            <div class="footer">
+                by Burst in Oct, 2011.
+            </div>
+        </div>
+    </body>
+</html>

@@ -333,6 +333,7 @@ Game.prototype.run = function () {
                             });
                             break;
                     }
+                    break;
                 }
             }
         }

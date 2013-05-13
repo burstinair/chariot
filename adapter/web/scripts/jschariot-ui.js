@@ -1,4 +1,4 @@
-(function($, jcg, jcn){
+(function($, jcg_canvas, jcg_webgl, jcn){
 //Ready
 $(function(){
 
@@ -10,12 +10,46 @@ $("a").css("cursor", "pointer");
 $(".nicknameinput").val($.cookie('nickname') || '');
 var _use_webgl = $("#use_webgl").is(":checked");
 $("#use_webgl").change(function () {
-    _render_shadow = $("#use_webgl").is(":checked");
+    if(_use_webgl = $("#use_webgl").is(":checked")) {
+        _canvas_game_window.hide();
+        _webgl_game_window.show();
+    } else {
+        _webgl_game_window.hide();
+        _canvas_game_window.show();
+    }
 });
 
+var _game_window_container = $("#gamewindow_container");
+var _canvas_game_window, _webgl_game_window;
+
+var jcg = {
+    initialize: function (data) {
+        data.boxes.reverse();
+        _canvas_game_window = $(jcg_canvas.initialize(data));
+        _webgl_game_window = $(jcg_webgl.initialize(data));
+        
+        if(_use_webgl) {
+            _canvas_game_window.hide();
+            _webgl_game_window.show();
+        } else {
+            _webgl_game_window.hide();
+            _canvas_game_window.show();
+        }
+        
+        _game_window_container.empty().append(_canvas_game_window).append(_webgl_game_window);
+    },
+    draw: function (data, room_info, options) {
+        if(_use_webgl) {
+            jcg_webgl.draw(data, room_info, options);
+        } else {
+            jcg_canvas.draw(data, room_info, options);
+        }
+    }
+};
+
 //Console
-$('body').append($.console({paused: false, hide: false, showtip: false})
-    .width(960).css('margin', 'auto').css('text-align', 'left'));
+//$('body').append($.console({paused: false, hide: false, showtip: false})
+//    .width(960).css('margin', 'auto').css('text-align', 'left'));
 
 //Hall
 var room = null;
@@ -100,7 +134,7 @@ $(".room .quitbutton").click(function () {
     });
 });
 jcn.socket.on("refresh_room", function(data) {
-    if(data.id == room.id) {
+    if(data && room && data.id == room.id) {
         room = data;
         $(".playerlist .playerlist_item").remove();
         $.each(room.players, function() {
@@ -127,9 +161,10 @@ var _keyMap = {
     "83": 4,    //s
     "68": 2,    //d
     "70": 1,    //f
-}
-jcn.socket.on("game_start", function(data) {
+};
+jcn.socket.on(GAME_START, function(data) {
     if(data.id == room.id) {
+        jcg.initialize(data);
         keyStatus = 0;
         alive = true;
         $('body').keydown(function (e) {
@@ -139,7 +174,7 @@ jcn.socket.on("game_start", function(data) {
                 e.stopPropagation();
                 e.preventDefault();
                 if(keyCapture) {
-                    jcn.socket.emit("keystatus", keyStatus.toString(16));
+                    jcn.socket.emit("keystatus", keyStatus.toString(36));
                 }
             }
         });
@@ -150,7 +185,7 @@ jcn.socket.on("game_start", function(data) {
                 e.stopPropagation();
                 e.preventDefault();
                 if(keyCapture) {
-                    jcn.socket.emit("keystatus", keyStatus.toString(16));
+                    jcn.socket.emit("keystatus", keyStatus.toString(36));
                 }
             }
         });
@@ -160,22 +195,20 @@ jcn.socket.on("game_start", function(data) {
         $("body").animate({scrollTop: $(".game .actions").offset().top}, 500);
     }
 });
-jcn.socket.on("game_refresh", function (data) {
-    var res = jcg.draw($(".gamewindow"), data, room, {use_webgl: _use_webgl});
-    if(alive && data.pls[data.idx].hp == 0) {
+jcn.socket.on(GAME_REFRESH, function (data) {
+    jcg.draw(data, room);
+    if(alive && data[INDEX_HP][data[INDEX_INDEX]] == 0) {
         alive = false;
         jcn.socket.emit("keystatus", 0);
     }
 });
-jcn.socket.on("game_end", function () {
-    //clearInterval(keyCapture);
+jcn.socket.on(GAME_END, function () {
     keyCapture = null;
     $('body').unbind('keyup').unbind('keydown');
     $(".game").hide();
     $(".room").show();
 });
 $(".game .quitbutton").click(function() {
-    //clearInterval(keyCapture);
     keyCapture = null;
     $('body').unbind('keyup').unbind('keydown');
     jcn.request("退出游戏", "quit", null, function () {
@@ -186,4 +219,4 @@ $(".game .quitbutton").click(function() {
 });
 
 });
-})(jQuery, jschariot_graphics, jschariot_network);
+})(jQuery, jschariot_graphics, jschariot_graphics_webgl, jschariot_network);

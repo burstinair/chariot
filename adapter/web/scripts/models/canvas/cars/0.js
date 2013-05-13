@@ -5,25 +5,25 @@ jcg.set_car_model(0, {
         var res = [];
         var wheel = jcg.cylinder(20, 15);
         jcg.roll(wheel, 90);
-        jcg.da_yaw(wheel, data.da);
+        jcg.da_yaw(wheel, data[INDEX_DA]);
         jcg.move(wheel, -75, -15, 40);
         res = $.merge(res, wheel);
         
         wheel = jcg.cylinder(20, 15);
         jcg.roll(wheel, 90);
-        jcg.da_yaw(wheel, data.da);
+        jcg.da_yaw(wheel, data[INDEX_DA]);
         jcg.move(wheel, 75, -15, 40);
         res = $.merge(res, wheel);
         
         wheel = jcg.cylinder(20, 15);
         jcg.roll(wheel, 90);
-        jcg.da_yaw(wheel, data.da);
+        jcg.da_yaw(wheel, data[INDEX_DA]);
         jcg.move(wheel, -75, -15, -40);
         res = $.merge(res, wheel);
         
         wheel = jcg.cylinder(20, 15);
         jcg.roll(wheel, 90);
-        jcg.da_yaw(wheel, data.da);
+        jcg.da_yaw(wheel, data[INDEX_DA]);
         jcg.move(wheel, 75, -15, -40);
         res = $.merge(res, wheel);
         
@@ -71,9 +71,9 @@ jcg.set_car_model(0, {
         jcg.move(head, 0, -100, -20);
         res = $.merge(res, head);
         
-        jcg.da_yaw(res, data.da, 5);
-        jcg.yaw(res, data.d);
-        jcg.move(res, data.x, 0, data.z);
+        jcg.da_yaw(res, data[INDEX_DA], 5);
+        jcg.yaw(res, data[INDEX_D]);
+        jcg.move(res, data[INDEX_X], 0, data[INDEX_Z]);
         return res;
     }
 });

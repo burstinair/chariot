@@ -108,6 +108,13 @@ a
     right : 20px;
     top : 20px;
 }
+.gamewindow_container
+{
+    width : 920px;
+    height : 600px;
+	margin : 0;
+	padding : 0;
+}
 
 /* Final */
 

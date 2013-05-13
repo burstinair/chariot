@@ -8,8 +8,11 @@
         <script type="text/javascript" src="./scripts/socket.io.min.js"></script>
         <script type="text/javascript" src="./scripts/plugin.js"></script>
         <script type="text/javascript" src="./scripts/JSON.js"></script>
+        <script type="text/javascript" src="./scripts/jschariot-const.js"></script>
         <script type="text/javascript" src="./scripts/jschariot-network.js"></script>
-        <script type="text/javascript" src="./scripts/jschariot-graphics.js"></script>
+        <script type="text/javascript" src="./scripts/jschariot-graphics-canvas.js"></script>
+        <script type="text/javascript" src="./scripts/three.min.js"></script>
+        <script type="text/javascript" src="./scripts/jschariot-graphics-webgl.js"></script>
         <script type="text/javascript" src="./scripts/jschariot-ui.js"></script>
     </head>
     <body>
@@ -43,11 +46,11 @@
                 <div class="actions">
                     <span class="roomtitle">xxx的房间</span>
                     <input type="button" value="退出" class="quitbutton" />
-                    <input type="checkbox" id="use_webgl" checked="checked" /><label for="use_webgl">使用WebGL</label>
+                    <input type="checkbox" id="use_webgl" /><label for="use_webgl">使用WebGL</label>
                 </div>
                 <div class="gamecontainer">
                     <div class="playerinfo"></div>
-                    <canvas class="gamewindow" width="920px" height="600px"></canvas>
+                    <div id="gamewindow_container"></id>
                 </div>
             </div>
             <div class="footer">

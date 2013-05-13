@@ -161,7 +161,7 @@ var _plane = function (width, height) {
         {x: width / 2, y: height / 2, z: 0},
         {x: -width / 2, y: height / 2, z: 0}
     ]];
-}
+};
 var _box = function (width1, width2, height) {
     return [
         [
@@ -201,7 +201,7 @@ var _box = function (width1, width2, height) {
             {x: -width1 / 2, y: -height / 2, z: -width2 / 2}
         ]
     ];
-}
+};
 var _cylinder = function (height, radius, scount) {
     scount = scount || 10;
     var top = [];
@@ -231,7 +231,7 @@ var _cylinder = function (height, radius, scount) {
     res.push(top.reverse());
     res.push(bottom);
     return res;
-}
+};
 var _cone = function (height, radius, scount) {
     scount = scount || 10;
     var bottom = [];
@@ -256,7 +256,7 @@ var _cone = function (height, radius, scount) {
     ]);
     res.push(bottom);
     return res;
-}
+};
 var _yaw = function(item, degree) {
     degree = degree / 180 * Math.PI;
     $.array_each(item, function () {
@@ -267,7 +267,7 @@ var _yaw = function(item, degree) {
             this.z = _z;
         });
     });
-}
+};
 var _pitch = function(item, degree) {
     degree = degree / 180 * Math.PI;
     $.array_each(item, function () {
@@ -278,7 +278,7 @@ var _pitch = function(item, degree) {
             this.z = _z;
         });
     });
-}
+};
 var _roll = function(item, degree) {
     degree = degree / 180 * Math.PI;
     $.array_each(item, function () {
@@ -289,7 +289,7 @@ var _roll = function(item, degree) {
             this.y = _y;
         });
     });
-}
+};
 var _da_yaw = function (item, da, degree) {
     degree = degree || 20;
     if(da > 0) {
@@ -297,7 +297,7 @@ var _da_yaw = function (item, da, degree) {
     } else if(da < 0) {
         _yaw(item, -degree);
     }
-}
+};
 var _move = function (item, x, y, z) {
     $.array_each(item, function () {
         $.array_each(this, function () {
@@ -306,7 +306,15 @@ var _move = function (item, x, y, z) {
             this.z += z;
         });
     });
-}
+};
+var _is_clockwise = function (p1, p2, p3) {
+    if(p1.x == p2.x)
+        return (p1.y < p2.y) == (p1.x > p3.x);
+    else if(p1.x == p3.x)
+        return (p1.y < p3.y) == (p1.x < p2.x);
+    else
+        return ((p1.y - p2.y) / (p1.x - p2.x) < (p1.y - p3.y) / (p1.x - p3.x)) ^ ((p1.x <= p2.x) == (p1.x > p3.x));
+};
 
 var _car_cache = {};
 var _get_car = function (tp) {
@@ -318,10 +326,10 @@ var _get_car = function (tp) {
         _car_cache[tp] = {
             loaded: false
         };        
-        $.getScript('scripts/models/cars/' + tp + '.js');
+        $.getScript('scripts/models/canvas/cars/' + tp + '.js');
         return null;
     }
-}
+};
 var _map_cache = {};
 var _get_map = function (map) {
     if(_map_cache[map] != null) {
@@ -332,10 +340,19 @@ var _get_map = function (map) {
         _map_cache[map] = {
             loaded: false
         };
-        $.getScript('scripts/models/maps/' + map + '.js');
+        $.getScript('scripts/models/canvas/maps/' + map + '.js');
         return null;
     }
-}
+};
+var _start_time = 0;
+var _boxes_data = [];
+var _target = null;
+var _initialize = function (data) {
+    _start_time = data.start_time;
+    _boxes_data = data.boxes;
+    _target = $("<canvas width='" + GAME_WIDTH + "' height='" + GAME_HEIGHT + "'></canvas>");
+    return _target;
+};
 
 var _camera = function (vport, position) {
     var _cam = $.data(vport, '_camera');
@@ -355,8 +372,8 @@ var _camera = function (vport, position) {
             },
             focal_length: 500,
             disappear_length: 10,
-            drawpolygon: function (transformed_points, fill_color, stroke_color) {
-                fill_color = fill_color || transformed_points.color || '#fff';
+            draw: function (fill_color, stroke_color, action) {
+                fill_color = fill_color || '#fff';
                 stroke_color = stroke_color || '#000';
                 if(fill_color instanceof _color) {
                     fill_color = fill_color.toString();
@@ -367,31 +384,31 @@ var _camera = function (vport, position) {
                 this.graphics.strokeStyle = stroke_color;
                 this.graphics.fillStyle = fill_color;
                 this.graphics.beginPath();
-                var lp = transformed_points[transformed_points.length - 1];
-                this.graphics.moveTo(lp.x, lp.y);
-                for(var i = 0; i < transformed_points.length; i++) {
-                    this.graphics.lineTo(transformed_points[i].x, transformed_points[i].y);
-                }
+                $.proxy(action, this)();
                 this.graphics.stroke();
                 this.graphics.fill();
                 this.graphics.closePath();
             },
+            drawpolygon: function (transformed_points, fill_color, stroke_color) {
+                this.draw(fill_color || transformed_points.color, stroke_color, function () {
+                    var lp = transformed_points[transformed_points.length - 1];
+                    this.graphics.moveTo(lp.x, lp.y);
+                    for(var i = 0; i < transformed_points.length; i++) {
+                        this.graphics.lineTo(transformed_points[i].x, transformed_points[i].y);
+                    }
+                });
+            },
+            __PI2: Math.PI * 2,
+            drawcircle: function (center, radius, fill_color, stroke_color) {
+                this.draw(fill_color, stroke_color, function () {
+                    this.graphics.arc(center.x, center.y, radius, 0, this.__PI2);
+                });
+            },
             drawunit: function (transformed_points) {
-                var visible = true;
-                if(transformed_points.length > 2) {
-                    var p1 = transformed_points[0];
-                    var p2 = transformed_points[1];
-                    var p3 = transformed_points[2];
-                    if(p1.x == p2.x)
-                        visible = (p1.y < p2.y) == (p1.x > p3.x);
-                    else if(p1.x == p3.x)
-                        visible = (p1.y < p3.y) == (p1.x < p2.x);
-                    else
-                        visible = ((p1.y - p2.y) / (p1.x - p2.x) < (p1.y - p3.y) / (p1.x - p3.x)) ^ ((p1.x <= p2.x) == (p1.x > p3.x));
-                } else {
+                if(transformed_points.length <= 2) {
                     return;
                 }
-                if(visible) {
+                if(_is_clockwise(transformed_points[0], transformed_points[1], transformed_points[2])) {
                     this.drawpolygon(transformed_points);
                 }
             },
@@ -493,22 +510,24 @@ var _camera = function (vport, position) {
 
 var _scene = function (data, map) {
     var _items = [];
-    $.each(data.crs, function () {
-        var car = _get_car(this.tp);
+    $.each(data[INDEX_CARS], function () {
+        var car = _get_car(this[INDEX_TYPE]);
         if(car != null) {
             _items.push(car.gen_car(this));
         }
     });
     if(map != null) {
-        $.each(data.bxs, function () {
-            if(this.v) {
-                _items.push(map.gen_box(this));
+        var box_d_date = new Date();
+        var box_d = (box_d_date.getSeconds() % 4 + box_d_date.getMilliseconds() / 1000) * 90;
+        $.each(_boxes_data, function (i, box_data) {
+            if(box_data.v) {
+                _items.push(map.gen_box(box_data, box_d));
             }
         });
-        $.each(data.tps, function () {
-            _items.push(map.gen_trap(this));
+        $.each(data[INDEX_TRAPS], function () {
+            _items.push(map.gen_trap(this, this[INDEX_OWNER] != data[INDEX_INDEX]));
         });
-        $.each(data.mss, function () {
+        $.each(data[INDEX_MISSILES], function () {
             _items.push(map.gen_missile(this));
         });
     }
@@ -526,6 +545,8 @@ window.jschariot_graphics = {
     yaw: _yaw,
     da_yaw: _da_yaw,
     move: _move,
+    is_clockwise: _is_clockwise,
+    initialize: _initialize,
     set_car_model: function (tp, data) {
         _car_cache[tp] = data;
         _car_cache[tp].loaded = true;
@@ -534,9 +555,21 @@ window.jschariot_graphics = {
         _map_cache[map] = data;
         _map_cache[map].loaded = true;
     },
-    draw: function (target, data, _rinfo, options) {
-        var cam = _camera(target, data.wld.crs[data.idx]);
-        var map = _get_map(data.map);
+    draw: function (data, _rinfo, options) {
+        var target = _target;
+        var d_pos = data[INDEX_CARS][data[INDEX_INDEX]];
+        var cam = _camera(target, {
+            x: d_pos[INDEX_X],
+            z: d_pos[INDEX_Z],
+            d: d_pos[INDEX_D]
+        });
+        var map = _get_map(data[INDEX_MAP_TYPE]);
+        
+        //boxes visible
+        var _box_visible_status = parseInt(data[INDEX_BOXES], 36);
+        for(var i = _boxes_data.length - 1; i >= 0; --i) {
+            _boxes_data[i].v = !!(_box_visible_status & (1 << i));
+        }
         
         //scene
         if(map != null) {
@@ -547,7 +580,7 @@ window.jschariot_graphics = {
                 });
             });
         }
-        var _items = _scene(data.wld, map);
+        var _items = _scene(data, map);
         _items = cam.adjust(_items);
         var _shapes = [];
         $.each(_items, function () {
@@ -563,23 +596,23 @@ window.jschariot_graphics = {
         
         //map, status
         if(map != null) {
-            for(var i = 0; i < data.wld.crs.length; i++) {
-                if(i != data.idx) {
+            for(var i = 0, l = data[INDEX_CARS].length; i < l; ++i) {
+                if(i != data[INDEX_INDEX]) {
                     var p = cam.adjust_point({
-                        x: data.wld.crs[i].x,
+                        x: data[INDEX_CARS][i][INDEX_X],
                         y: -200,
-                        z: data.wld.crs[i].z
+                        z: data[INDEX_CARS][i][INDEX_Z]
                     });
                     if(p.z + cam.focal_length - cam.disappear_length >= 0) {
                         map.draw_others_status(cam, {
-                            hp: data.pls[i].hp,
+                            hp: data[INDEX_HP][i],
                             name: _rinfo.players[i].name,
                             ip: _rinfo.players[i].ip
                         }, cam.transform_point(p));
                     }
                 }
             }
-            map.draw_status(cam, data);
+            map.draw_status(cam, data, _boxes_data, _start_time);
         } else {
             cam.graphics.fillStyle = '#fff';
             cam.graphics.fillRect(0, 0, cam.vport_width, cam.vport_height);

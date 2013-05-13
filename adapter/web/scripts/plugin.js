@@ -212,6 +212,7 @@
             _res.append($('<div></div>').text(callstack[i]));
         }
         var _m = $('<div></div>')
+            .css('line-height', '1.5em')
             .data('stacktrace', _res.html())
             .hover(function () {
                 $(this).css('background', '#eee');

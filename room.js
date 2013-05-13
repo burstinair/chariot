@@ -52,6 +52,8 @@ Room.prototype.quit_player = function (player) {
         if(this.game != null)
             this.game.end();
         Room.refresh();
+    } else {
+        this.check_start_game();
     }
 }
 Room.prototype.check_start_game = function () {

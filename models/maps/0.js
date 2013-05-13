@@ -44,13 +44,11 @@ exports = module.exports = {
         for(var i = 0; i < playercount; i++) {
             res.push({
                 x: Math.sin(_c * i) * 1200,
-                z: -Math.cos(_c * i) * 1200,
-                d: _c * i
+                z: -Math.cos(_c * i) * 1200
             });
             res.push({
                 x: Math.sin(_c * i) * 600,
-                z: -Math.cos(_c * i) * 600,
-                d: _c * i
+                z: -Math.cos(_c * i) * 600
             });
         }
         return res;

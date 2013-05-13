@@ -29,6 +29,7 @@ jcg.set_map_model(0, {
         jcg.yaw(wall, 90);
         jcg.move(wall, -2150, -100, 0);
         res.push(wall);
+        res.color = jcg.color('#');
         return res;
     },
     gen_trap: function (data, not_own) {
@@ -66,7 +67,7 @@ jcg.set_map_model(0, {
         return res;
     },
     draw_background: function (cam) {
-        cam.graphics.fillStyle = "#ddd";
+        cam.graphics.fillStyle = "#ddd";//"#cfe8f5";
         cam.graphics.fillRect(0, 0, cam.vport_width, cam.vport_height / 2);
         cam.graphics.fillStyle = "#eee";
         cam.graphics.fillRect(0, cam.vport_height / 2, cam.vport_width, cam.vport_height);
@@ -80,7 +81,7 @@ jcg.set_map_model(0, {
                 {x: point.x + 10, y: point.y - 30 + i * 6},
                 {x: point.x + 10, y: point.y - 25 + i * 6},
                 {x: point.x - 10, y: point.y - 25 + i * 6}
-            ], data.hp >= 3 - i ? '#d88' : '#fff');
+            ], data.hp >= 3 - i ? '#c66' : '#fff');
         }
         cam.graphics.font = '10px Arial';
         cam.graphics.fillStyle = '#000';
@@ -100,7 +101,7 @@ jcg.set_map_model(0, {
                 {x: 900, y: 10 + i * 21},
                 {x: 900, y: 28 + i * 21},
                 {x: 820, y: 28 + i * 21}
-            ], self_hp >= 3 - i ? '#aaa' : '#fff');
+            ], self_hp >= 3 - i ? '#c66' : '#fff');
         }
         
         //cd
@@ -110,7 +111,7 @@ jcg.set_map_model(0, {
                 {x: 800, y: 60},
                 {x: 800, y: 70},
                 {x: 800 - data[INDEX_CD] / 20, y: 70}
-            ], '#eee');
+            ], '#eee', '#444');
         }
         
         //items
@@ -120,7 +121,7 @@ jcg.set_map_model(0, {
                 {x: 650 + i * 50, y: 10},
                 {x: 650 + i * 50, y: 50},
                 {x: 610 + i * 50, y: 50}
-            ]);
+            ], '#fefefe', '#666');
             cam.graphics.drawImage(_items_cache[_id_item_map[data[INDEX_ITEMS][i]]], 610 + i * 50, 10);
         }
         
@@ -173,7 +174,7 @@ jcg.set_map_model(0, {
             {x: 210, y: 10},
             {x: 210, y: 210},
             {x: 10, y: 210}
-        ]);
+        ], '#fefefe', '#666');
         $.each(boxes_data, function () {
             if(this.v) {
                 var _x = this.x;

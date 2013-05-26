@@ -1,4 +1,4 @@
-(function($, jcg_canvas, jcg_webgl, jcn){
+﻿(function($, jcg_canvas, jcg_webgl, jcn){
 //Ready
 $(function(){
 
@@ -48,8 +48,8 @@ var jcg = {
 };
 
 //Console
-//$('body').append($.console({paused: false, hide: false, showtip: false})
-//    .width(960).css('margin', 'auto').css('text-align', 'left'));
+$('body').append($.console({paused: false, hide: false, showtip: false})
+    .width(960).css('margin', 'auto').css('text-align', 'left'));
 
 //Hall
 var room = null;

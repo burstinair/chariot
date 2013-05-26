@@ -50,12 +50,12 @@ var _initialize = function (data) {
     FAR = 10000;
     
     _renderer = new THREE.WebGLRenderer();
-    _camera = new THREE.PerspectiveCamera(VIEW_ANGLE, ASPECT, NEAR, FAR);
-    _scene = new THREE.Scene();
-    _scene.add(_camera);
-    _camera.position.z = 300;
     _renderer.setSize(WIDTH, HEIGHT);
     _target = _renderer.domElement;
+    _camera = new THREE.PerspectiveCamera(VIEW_ANGLE, ASPECT, NEAR, FAR);
+    _camera.position.z = 300;
+
+/*
 
     geometry = new THREE.PlaneGeometry( 200, 200 );
     geometry.applyMatrix( new THREE.Matrix4().makeRotationX( - Math.PI / 4 ) );
@@ -94,6 +94,8 @@ var _initialize = function (data) {
 
     // add to the scene
     _scene.add(pointLight);
+
+*/
     
     return _target;
 };
@@ -102,6 +104,9 @@ window.jschariot_graphics_webgl = {
     initialize: _initialize,
     draw: function (data, _rinfo, options) {
         //_sphere.rotation.x += Math.PI / 10;
+
+        _scene = new THREE.Scene();
+        _scene.add(_camera);
         _renderer.render(_scene, _camera);
     }
 };

@@ -1,4 +1,4 @@
-(function ($, jcg) {
+﻿(function ($, jcg, th) {
 
 var _item_id_list = [0, 1, 2, 101];
 var _id_item_map = {};
@@ -13,23 +13,44 @@ for(var i = 0; i < _item_id_list.length; ++i) {
 
 jcg.set_map_model(0, {
     gen_wall: function () {
-        var res = [];
-        var wall = jcg.plane(4300, 200);
-        jcg.move(wall, 0, -100, 2150);
-        res.push(wall);
-        wall = jcg.plane(4300, 200);
-        jcg.yaw(wall, 180);
-        jcg.move(wall, 0, -100, -2150);
-        res.push(wall);
-        wall = jcg.plane(4300, 200);
-        jcg.yaw(wall, -90);
-        jcg.move(wall, 2150, -100, 0);
-        res.push(wall);
-        wall = jcg.plane(4300, 200);
-        jcg.yaw(wall, 90);
-        jcg.move(wall, -2150, -100, 0);
-        res.push(wall);
-        return res;
+
+        geometry.applyMatrix( new THREE.Matrix4().makeRotationX( - Math.PI / 4 ) );
+
+        var res = new th.Geometry();
+        var wall = new th.PlaneGeometry(4300, 200);
+        var adjust = new th.Matrix4();
+        adjust.setPosition(new th.Vector3(0, -100, 2150));
+        wall.applyMatrix(adjust);
+        //jcg.move(wall, 0, -100, 2150);
+        th.GeometryUtils.merge(res, wall);
+
+        wall = new th.PlaneGeometry(4300, 200);
+        adjust = new th.Matrix4();
+        adjust.makeRotationX(Math.PI);
+        adjust.setPosition(new th.Vector3(0, -100, -2150));
+        wall.applyMatrix(adjust);
+        //jcg.yaw(wall, 180);
+        //jcg.move(wall, 0, -100, -2150);
+        th.GeometryUtils.merge(res, wall);
+
+        wall = new th.PlaneGeometry(4300, 200);
+        adjust = new th.Matrix4();
+        adjust.makeRotationX(-Math.PI / 2);
+        adjust.setPosition(new th.Vector3(2150, -100, 0));
+        wall.applyMatrix(adjust);
+        //jcg.yaw(wall, -90);
+        //jcg.move(wall, 2150, -100, 0);
+        th.GeometryUtils.merge(res, wall);
+
+        wall = new th.PlaneGeometry(4300, 200);
+        adjust = new th.Matrix4();
+        adjust.makeRotationX(Math.PI / 2);
+        adjust.setPosition(new th.Vector3(-2150, -100, 0));
+        wall.applyMatrix(adjust);
+        //jcg.yaw(wall, 90);
+        //jcg.move(wall, -2150, -100, 0);
+        th.GeometryUtils.merge(res, wall);
+        return new Mesh(res, new MeshLambertMaterial({color: 0xdddddd}));
     },
     gen_trap: function (data, not_own) {
         //var res = jcg.box(50, 50, 10);
@@ -198,4 +219,4 @@ jcg.set_map_model(0, {
     }
 });
 
-})(jQuery, jschariot_graphics);
+})(jQuery, jschariot_graphics, THREE);

@@ -1,4 +1,4 @@
-var Config = require('./config'),
+﻿var Config = require('./config'),
     Network = require('./network'),
     KeyStatus = require('./key_status');
 

@@ -1,7 +1,8 @@
-(function ($, jcg) {
+(function ($, jcg, jcg_webgl) {
 
-jcg.set_car_model(0, {
+jcg_webgl.set_car_model(0, {
     gen_car: function (data) {    
+$.log('ok');
         var res = new jcg.Geometry();
         var wheel = new jcg.CylinderGeometry(15, 15, 20, 20, 1, false);
         var adjust = new jcg.Matrix4();
@@ -92,8 +93,9 @@ jcg.set_car_model(0, {
         adjust.makeRotationY(data[INDEX_D] * Math.PI / 180);
         adjust.setPosition(new jcg.Vector3(data[INDEX_X], 0, -data[INDEX_Z]));
         res.applyMatrix(adjust);
+$.log('ok');
         return new Mesh(res, new MeshLambertMaterial({color: 0xdddddd}));
     }
 });
 
-})(jQuery, THREE);
+})(jQuery, THREE, jschariot_graphics_webgl);

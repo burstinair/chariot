@@ -188,9 +188,9 @@ Game.prototype.run = function () {
     var players = this.players;
     
     //运动
-    for(var i = 0; i < world.boxes.length; i++) {
-        world.boxes[i].d = (world.boxes[i].d + Math.PI * time / 30) % (Math.PI * 2);
-    }
+    //for(var i = 0; i < world.boxes.length; i++) {
+    //    world.boxes[i].d = (world.boxes[i].d + Math.PI * time / 30) % (Math.PI * 2);
+    //}
     for(var i = 0; i < world.missiles.length; i++) {
         world.missiles[i].px = world.missiles[i].x;
         world.missiles[i].pz = world.missiles[i].z;
@@ -456,7 +456,10 @@ Game.prototype.gen_msg = function (index) {
     var res = this.msg;
     res.splice(7, 4);
     res.push(index);
+    
+    //速度
     res.push(Math.floor(-Math.sin(this.world.cars[index].d) * this.world.cars[index].xv + Math.cos(this.world.cars[index].d) * this.world.cars[index].zv));
+    
     res.push(this.players[index].items);
     res.push(Math.floor(this.players[index].cd));
     return res;

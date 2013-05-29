@@ -30,9 +30,9 @@ Network.on('connection', function (socket) {
             socket.set('playerinfo', player, function () {
                 var room = Room.find(data.id);
                 if(room == null) {
-                    socket.emit("replay_join", {suc: false, data: '房间不存在。'});
+                    socket.emit("reply_join", {suc: false, data: '房间不存在。'});
                 } else if(room.is_in_game) {
-                    socket.emit("replay_join", {suc: false, data: '房间正在游戏中。'});
+                    socket.emit("reply_join", {suc: false, data: '房间正在游戏中。'});
                 } else {
                     player.status = "未准备";
                     socket.emit("reply_join", {suc: true, data: room.gen_msg()});

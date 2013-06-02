@@ -39,6 +39,14 @@ var _renderer, _camera, _scene;
 var _sphere, _floor;
 
 var _initialize = function (data) {
+    for(var k in _car_cache) {
+        _car_cache[k].clear();
+    }
+    
+    for(var k in _map_cache) {
+        _map_cache[k].clear();
+    }
+    
     _start_time = data.start_time;
     _boxes_data = data.boxes;
     
@@ -47,57 +55,22 @@ var _initialize = function (data) {
     VIEW_ANGLE = 45;
     ASPECT = WIDTH / HEIGHT;
     NEAR = 0.1;
-    FAR = 10000;
+    FAR = 100000;
     
-    _renderer = new THREE.WebGLRenderer();
+    _renderer = new THREE.WebGLRenderer( { antialias: true } );
+    _renderer.setClearColor(0xffffff, 1);
     _renderer.setSize(WIDTH, HEIGHT);
+    _renderer.autoClear = false;
+    _renderer.gammaInput = true;
+    _renderer.gammaOutput = true;
+    _renderer.physicallyBasedShading = true;
     _target = _renderer.domElement;
     _camera = new THREE.PerspectiveCamera(VIEW_ANGLE, ASPECT, NEAR, FAR);
-
-/*
-
-    geometry = new THREE.PlaneGeometry( 200, 200 );
-    geometry.applyMatrix( new THREE.Matrix4().makeRotationX( - Math.PI / 4 ) );
-
-    var material = new THREE.MeshLambertMaterial( { color: 0xdddddd } );
-
-    _floor = new THREE.Mesh( geometry, material );
-    _scene.add( _floor );
-
-    var sphereMaterial = new THREE.MeshPhongMaterial(
-    {
-        color: 0xff4400, specular: 0x333333, shininess: 100
-    });
-    
-    // create a new mesh with
-    // sphere geometry - we will cover
-    // the sphereMaterial next!
-    _sphere = new THREE.Mesh(
-        new THREE.CylinderGeometry(15, 15, 20, 20, 1, false),
-        sphereMaterial
-    );
-    
-    _sphere.geometry.dynamic = true;
-    //_sphere.geometry.verticesNeedUpdate = true;
-    //_sphere.geometry.normalsNeedUpdate = true;
-    
-    // add the sphere to the scene
-    _scene.add(_sphere);
-    
-    var pointLight = new THREE.PointLight(0xFFFFFF);
-
-    // set its position
-    pointLight.position.x = 0;
-    pointLight.position.y = 150;
-    pointLight.position.z = 150;
-
-    // add to the scene
-    _scene.add(pointLight);
-
-*/
     
     return _target;
 };
+
+var first = true;
 
 window.jschariot_graphics_webgl = {
     initialize: _initialize,
@@ -111,18 +84,30 @@ window.jschariot_graphics_webgl = {
     },
     draw: function (data, _rinfo, options) {
 
-        var d_pos = data[INDEX_CARS][data[INDEX_INDEX]];
-        _camera.position.x = d_pos[INDEX_X];
-        _camera.position.z = d_pos[INDEX_Z];
-        _camera.updateProjectionMatrix();
-        _camera.projectionMatrix.makeRotationY(d_pos[INDEX_D] * Math.PI / 180);
-
         var map = _get_map(data[INDEX_MAP_TYPE]);
 
-        $.log(data[INDEX_MAP_TYPE], map);
-
         _scene = new THREE.Scene();
+
+        //Camera
+        var d_pos = data[INDEX_CARS][data[INDEX_INDEX]];
+        var d_angle = d_pos[INDEX_D] * Math.PI / 180;
+        _camera.rotation.y = d_angle;
+        _camera.position.x = d_pos[INDEX_X] + 600 * Math.sin(d_angle);
+        _camera.position.y = 200;
+        _camera.position.z = 600 * Math.cos(d_angle) - d_pos[INDEX_Z];
         _scene.add(_camera);
+        
+        //Light
+        //_scene.add(new THREE.AmbientLight(0x404040));
+        _scene.add(new THREE.HemisphereLight(0xaaccff, 0xaaaaaa, 0.2));
+        
+        var pointLight = new THREE.PointLight(0xFFFFFF);
+
+        pointLight.position.x = d_pos[INDEX_X] + 600 * Math.sin(d_angle);
+        pointLight.position.y = 300;
+        pointLight.position.z = 600 * Math.cos(d_angle) - d_pos[INDEX_Z];
+
+        _scene.add(pointLight);
         
         //boxes visible
         var _box_visible_status = parseInt(data[INDEX_BOXES], 36);
@@ -132,7 +117,7 @@ window.jschariot_graphics_webgl = {
         
         //scene
         if(map != null) {
-            map.draw_background(cam);
+            //map.draw_background(cam);
             _scene.add(map.gen_wall());
         }
         $.each(data[INDEX_CARS], function () {
@@ -185,13 +170,34 @@ window.jschariot_graphics_webgl = {
             cam.graphics.fillText(tip, cam.vport_width / 2 - cam.graphics.measureText(tip).width / 2, cam.vport_height / 2 - 24);
         }*/
 
-        var pointLight = new THREE.PointLight(0xFFFFFF);
+        /*var geometry = new THREE.PlaneGeometry( 200, 200 );
+        geometry.applyMatrix( new THREE.Matrix4().makeRotationX( - Math.PI / 4 ) );
 
-        pointLight.position.x = 0;
-        pointLight.position.y = 150;
-        pointLight.position.z = 150;
+        var material = new THREE.MeshLambertMaterial( { color: 0xdddddd } );
 
-        _scene.add(pointLight);
+        _floor = new THREE.Mesh( geometry, material );
+        _scene.add( _floor );
+
+        var sphereMaterial = new THREE.MeshPhongMaterial(
+        {
+            color: 0xff4400, specular: 0x333333, shininess: 100
+        });
+        
+        // create a new mesh with
+        // sphere geometry - we will cover
+        // the sphereMaterial next!
+        _sphere = new THREE.Mesh(
+            new THREE.CylinderGeometry(15, 15, 20, 20, 1, false),
+            sphereMaterial
+        );
+        
+        _sphere.geometry.dynamic = true;
+        //_sphere.geometry.verticesNeedUpdate = true;
+        //_sphere.geometry.normalsNeedUpdate = true;
+        
+        // add the sphere to the scene
+        _scene.add(_sphere);
+        */
 
         _renderer.render(_scene, _camera);
     }

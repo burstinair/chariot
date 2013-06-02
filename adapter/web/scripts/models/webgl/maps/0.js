@@ -1,4 +1,4 @@
-﻿(function ($, jcg, th, jcg_webgl) {
+﻿(function ($, THREE, jcg_webgl, jcg) {
 
 var _item_id_list = [0, 1, 2, 101];
 var _id_item_map = {};
@@ -11,96 +11,105 @@ for(var i = 0; i < _item_id_list.length; ++i) {
     _items_cache.push(_img);
 }
 
+var _wall_cache = null,
+    _wall_material = null,
+    _trap_cache = null,
+    _missile_cache = null,
+    _box_cache = null,
+    _box_material = null;
+
 jcg_webgl.set_map_model(0, {
+    clear: function () {
+        _wall_cache = null;
+        _wall_material = null;
+        _trap_cache = null;
+        _missile_cache = null;
+        _box_cache = null;
+        _box_material = null;
+    },
     gen_wall: function () {
+    
+        if(_wall_cache == null) {
 
-        geometry.applyMatrix( new THREE.Matrix4().makeRotationX( - Math.PI / 4 ) );
+            _wall_cache = new THREE.Geometry();
+            
+            var wall = new THREE.PlaneGeometry(4300, 200);
+            var adjust = new THREE.Matrix4();
+            adjust.setPosition(new THREE.Vector3(0, 100, -2150));
+            wall.applyMatrix(adjust);
+            THREE.GeometryUtils.merge(_wall_cache, wall);
 
-        var res = new th.Geometry();
-        var wall = new th.PlaneGeometry(4300, 200);
-        var adjust = new th.Matrix4();
-        adjust.setPosition(new th.Vector3(0, -100, 2150));
-        wall.applyMatrix(adjust);
-        //jcg.move(wall, 0, -100, 2150);
-        th.GeometryUtils.merge(res, wall);
+            wall = new THREE.PlaneGeometry(4300, 200);
+            adjust = new THREE.Matrix4();
+            adjust.makeRotationY(Math.PI);
+            adjust.setPosition(new THREE.Vector3(0, 100, 2150));
+            wall.applyMatrix(adjust);
+            THREE.GeometryUtils.merge(_wall_cache, wall);
 
-        wall = new th.PlaneGeometry(4300, 200);
-        adjust = new th.Matrix4();
-        adjust.makeRotationY(Math.PI);
-        adjust.setPosition(new th.Vector3(0, -100, -2150));
-        wall.applyMatrix(adjust);
-        //jcg.yaw(wall, 180);
-        //jcg.move(wall, 0, -100, -2150);
-        th.GeometryUtils.merge(res, wall);
+            wall = new THREE.PlaneGeometry(4300, 200);
+            adjust = new THREE.Matrix4();
+            adjust.makeRotationY(-Math.PI / 2);
+            adjust.setPosition(new THREE.Vector3(2150, 100, 0));
+            wall.applyMatrix(adjust);
+            THREE.GeometryUtils.merge(_wall_cache, wall);
 
-        wall = new th.PlaneGeometry(4300, 200);
-        adjust = new th.Matrix4();
-        adjust.makeRotationY(-Math.PI / 2);
-        adjust.setPosition(new th.Vector3(2150, -100, 0));
-        wall.applyMatrix(adjust);
-        //jcg.yaw(wall, -90);
-        //jcg.move(wall, 2150, -100, 0);
-        th.GeometryUtils.merge(res, wall);
-
-        wall = new th.PlaneGeometry(4300, 200);
-        adjust = new th.Matrix4();
-        adjust.makeRotationY(Math.PI / 2);
-        adjust.setPosition(new th.Vector3(-2150, -100, 0));
-        wall.applyMatrix(adjust);
-        //jcg.yaw(wall, 90);
-        //jcg.move(wall, -2150, -100, 0);
-        th.GeometryUtils.merge(res, wall);
-        return new Mesh(res, new MeshLambertMaterial({color: 0xdddddd}));
+            wall = new THREE.PlaneGeometry(4300, 200);
+            adjust = new THREE.Matrix4();
+            adjust.makeRotationY(Math.PI / 2);
+            adjust.setPosition(new THREE.Vector3(-2150, 100, 0));
+            wall.applyMatrix(adjust);
+            THREE.GeometryUtils.merge(_wall_cache, wall);
+            
+            _wall_material = new THREE.MeshLambertMaterial({color: 0x999999});
+            //_wall_material = new THREE.MeshPhongMaterial({color: 0x999999, specular: 0x333333, shininess: 100});
+        }
+        return new THREE.Mesh(_wall_cache, _wall_material);
     },
     gen_trap: function (data, not_own) {
-        //var res = jcg.box(50, 50, 10);
-        var res = new th.CylinderGeometry(0, 40, 15, 7, 1, false);
-        var adjust = new th.Matrix4();
-        adjust.makeRotationY(data[INDEX_D] * Math.PI / 180);
-        adjust.setPosition(new th.Vector3(data[INDEX_X], -5, data[INDEX_Z]));
-        //var res = jcg.cone(15, 40, 7);
-        //jcg.yaw(res, data[INDEX_D]);
-        //jcg.move(res, data[INDEX_X], -5, data[INDEX_Z]);
-        var color = 0xdddddd;
+        if(_trap_cache == null) {
+            _trap_cache = new THREE.CylinderGeometry(0, 40, 15, 7, 1, false);
+        }
+        var color = 0x444444;
         if(not_own)
-            color = 0xdd5555;
-        return new Mesh(res, new MeshLambertMaterial({color: color}));
+            color = 0x993333;
+        //var _trap_material = new THREE.MeshLambertMaterial({color: color});
+        var _trap_material = new THREE.MeshPhongMaterial({color: color, specular: 0x333333, shininess: 100});
+        var res_m = new THREE.Mesh(_trap_cache, _trap_material);
+        res_m.rotation.y = data[INDEX_D] * Math.PI / 180;
+        res_m.position.x = data[INDEX_X];
+        res_m.position.y = 5;
+        res_m.position.z = -data[INDEX_Z];
+        return res_m;
     },
     gen_missile: function (data) {
-        //var res = [];
+        if(_missile_cache == null) {
+            _missile_cache = new THREE.CylinderGeometry(0, 5, 50, 10, 1, false);
+            var adjust = new THREE.Matrix4();
+            adjust.makeRotationX(-Math.PI / 2);
+            _missile_cache.applyMatrix(adjust);
+            
+        }
         
-        /*var head = jcg.cone(20, 7);
-        jcg.move(head, data[INDEX_X], -data[INDEX_Z], -115);
-        $.merge(res, head);
-        
-        var body = jcg.cylinder(30, 5);
-        jcg.move(body, data[INDEX_X], -data[INDEX_Z], -90);
-        $.merge(res, body);*/
-
-        var res = new th.CylinderGeometry(0, 5, 50, 10, 1, false);
-        var adjust = new th.Matrix4();
-        adjust.makeRotationX(-Math.PI / 2);
-        adjust.setPosition(new th.Vector3(data[INDEX_X], -100, data[INDEX_Z]));
-        
-        //var res = jcg.cone(50, 5);
-        //jcg.pitch(res, -90);
-        //jcg.yaw(res, data[INDEX_D]);
-        //jcg.move(res, data[INDEX_X], -100, data[INDEX_Z]);
-        
-        return new Mesh(res, new MeshLambertMaterial({color: 0xdddddd}));
+        //var res_m = new THREE.Mesh(_missile_cache, new THREE.MeshLambertMaterial({color: 0x444444}));
+        var res_m = new THREE.Mesh(_missile_cache, new THREE.MeshPhongMaterial({color: 0x444444, specular: 0x333333, shininess: 100}));
+        res_m.rotation.y = data[INDEX_D] * Math.PI / 180;
+        res_m.position.x = data[INDEX_X];
+        res_m.position.y = 100;
+        res_m.position.z = -data[INDEX_Z];
+        return res_m;
     },
     gen_box: function (data, d) {
-        /*var res = jcg.box(50, 50, 50);
-        jcg.yaw(res, d || 50);
-        jcg.move(res, data.x, -100, data.z);
-        res.color = jcg.color('#fffccc');
-        return res;*/
-
-        var res = new th.CubeGeometry(50, 50, 50, 1, 1, 1);
-        var adjust = new th.Matrix4();
-        adjust.makeRotationY((d || 50) * Math.PI / 180);
-        adjust.setPosition(new th.Vector3(data.x, -100, data.z));
-        return new Mesh(res, new MeshLambertMaterial({color: 0xfffccc}));
+        if(_box_cache == null) {
+            _box_cache = new THREE.CubeGeometry(50, 50, 50);
+            //_box_material = new THREE.MeshLambertMaterial({color: 0xdddd66});
+            _box_material = new THREE.MeshPhongMaterial({color: 0xdddd66, specular: 0x333333, shininess: 100});
+        }
+        var res_m = new THREE.Mesh(_box_cache, _box_material);
+        res_m.rotation.y = (d || 50) * Math.PI / 180;
+        res_m.position.x = data.x;
+        res_m.position.y = 100;
+        res_m.position.z = -data.z;
+        return res_m;
     },
     draw_background: function (cam) {
         /*cam.graphics.fillStyle = "#ddd";
@@ -111,7 +120,7 @@ jcg_webgl.set_map_model(0, {
     draw_others_status: function (cam, data, point) {
         //var hp = data.hp + ' / 3';
         //cam.graphics.fillText(hp, point.x - cam.graphics.measureText(hp).width / 2, point.y - 24);
-        *for(var i = 0; i < 3; i++) {
+        /*for(var i = 0; i < 3; i++) {
             cam.drawpolygon([
                 {x: point.x - 10, y: point.y - 30 + i * 6},
                 {x: point.x + 10, y: point.y - 30 + i * 6},
@@ -229,10 +238,10 @@ jcg_webgl.set_map_model(0, {
             signal[0].color = jcg.color(i == data[INDEX_INDEX] ? '#eee' : '#d55');
             jcg.roll(signal, -this[INDEX_D]);
             jcg.move(signal, 110 + _x / 20, 110 - _z / 20, 0);
-            cam.drawpolygon(signal[0]);*/
+            cam.drawpolygon(signal[0]);/
             cam.drawcircle({x: 110 + _x / 20, y: 110 - _z / 20}, 5, jcg.color(i == data[INDEX_INDEX] ? '#eee' : '#d55'));
         });*/
     }
 });
 
-})(jQuery, jschariot_graphics, THREE, jschariot_graphics_webgl);
+})(jQuery, THREE, jschariot_graphics_webgl, jschariot_graphics);

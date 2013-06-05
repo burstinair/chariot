@@ -263,7 +263,26 @@
                             if(typeof _m == 'undefined') {
                                 _m = 'undefined';
                             } else if(typeof JSON != 'undefined') {
-                                _m = JSON.stringify(_m);
+                                try {
+                                    _m = JSON.stringify(_m);
+                                } catch (e) {
+                                    if(_m instanceof $) {
+                                        var res = [];
+                                        res.push('[');
+                                        $.each(_m, function (i, n) {
+                                            res.push(n.toString());
+                                            res.push(', ');
+                                        });
+                                        if(res.length > 1) {
+                                            res[res.length - 1] = ']';
+                                        } else {
+                                            res.push(']');
+                                        }
+                                        _m = res.join('');
+                                    } else {
+                                        _m = _m.toString();
+                                    }
+                                }
                             }
                             msg.push(_m);
                         }

@@ -11,7 +11,12 @@ for(var i = 0; i < _item_id_list.length; ++i) {
     _items_cache.push(_img);
 }
 
-var _wall_cache = null,
+var _scene_cube_cache = null,
+    _scene_cube_texture = null,
+    _scene_cube_material = null,
+    _floor_cache = null,
+    _floor_material = null,
+    _wall_cache = null,
     _wall_material = null,
     _trap_cache = null,
     _missile_cache = null,
@@ -20,6 +25,11 @@ var _wall_cache = null,
 
 jcg_webgl.set_map_model(0, {
     clear: function () {
+        _scene_cube_cache = null;
+        _scene_cube_texture = null;
+        _scene_cube_material = null;
+        _floor_cache = null;
+        _floor_material = null;
         _wall_cache = null;
         _wall_material = null;
         _trap_cache = null;
@@ -33,61 +43,140 @@ jcg_webgl.set_map_model(0, {
 
             _wall_cache = new THREE.Geometry();
             
-            var wall = new THREE.PlaneGeometry(4300, 200);
+            var wall = new THREE.PlaneGeometry(8300, 400);
             var adjust = new THREE.Matrix4();
-            adjust.setPosition(new THREE.Vector3(0, 100, -2150));
+            adjust.setPosition(new THREE.Vector3(0, 100, -4150));
             wall.applyMatrix(adjust);
             THREE.GeometryUtils.merge(_wall_cache, wall);
 
-            wall = new THREE.PlaneGeometry(4300, 200);
+            wall = new THREE.PlaneGeometry(8300, 400);
             adjust = new THREE.Matrix4();
             adjust.makeRotationY(Math.PI);
-            adjust.setPosition(new THREE.Vector3(0, 100, 2150));
+            adjust.setPosition(new THREE.Vector3(0, 100, 4150));
             wall.applyMatrix(adjust);
             THREE.GeometryUtils.merge(_wall_cache, wall);
 
-            wall = new THREE.PlaneGeometry(4300, 200);
+            wall = new THREE.PlaneGeometry(8300, 400);
             adjust = new THREE.Matrix4();
             adjust.makeRotationY(-Math.PI / 2);
-            adjust.setPosition(new THREE.Vector3(2150, 100, 0));
+            adjust.setPosition(new THREE.Vector3(4150, 100, 0));
             wall.applyMatrix(adjust);
             THREE.GeometryUtils.merge(_wall_cache, wall);
 
-            wall = new THREE.PlaneGeometry(4300, 200);
+            wall = new THREE.PlaneGeometry(8300, 400);
             adjust = new THREE.Matrix4();
             adjust.makeRotationY(Math.PI / 2);
-            adjust.setPosition(new THREE.Vector3(-2150, 100, 0));
+            adjust.setPosition(new THREE.Vector3(-4150, 100, 0));
             wall.applyMatrix(adjust);
             THREE.GeometryUtils.merge(_wall_cache, wall);
             
-            _wall_material = new THREE.MeshLambertMaterial({color: 0x999999});
+            var texture = THREE.ImageUtils.loadTexture( "images/textures/crate.gif" );
+            texture.anisotropy = 8;
+            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(44, 2);
+            _wall_material = new THREE.MeshPhongMaterial( { color: 0xffffff, map: texture } );
+            //_wall_material = new THREE.MeshLambertMaterial({color: 0x999999});
             //_wall_material = new THREE.MeshPhongMaterial({color: 0x999999, specular: 0x333333, shininess: 100});
         }
-        return new THREE.Mesh(_wall_cache, _wall_material);
+        var res_m = new THREE.Mesh(_wall_cache, _wall_material);
+        res_m.castShadow = true;
+        res_m.receiveShadow = true;
+        return res_m;
+    },
+    gen_floor: function () {
+        if(_floor_cache == null) {
+            //var texture = THREE.ImageUtils.loadTexture( "images/textures/crate.gif" );
+            //var texture = THREE.ImageUtils.loadTexture("images/textures/terrain/grasslight-big.jpg");
+            //var texture = THREE.ImageUtils.loadTexture("images/textures/terrain/backgrounddetailed6.jpg");
+            //var texture = THREE.ImageUtils.loadTexture("images/textures/stone.jpg");
+            var texture = THREE.ImageUtils.loadTexture("images/textures/rocks.jpg");
+            //var texture = THREE.ImageUtils.loadTexture("images/textures/lava/lavatile.jpg");
+            texture.anisotropy = 8;
+            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(10, 10);
+            
+            _floor_material = new THREE.MeshPhongMaterial({color: 0xffffff, shininess: 0, emissive: 0xbbbbbb, map: texture});
+            //_floor_material = new THREE.MeshPhongMaterial( { emissive: 0xbbbbbb } );
+            
+            _floor_cache = new THREE.PlaneGeometry(100, 100);
+        }
+        var res_m = new THREE.Mesh( _floor_cache, _floor_material );
+        res_m.rotation.x = - Math.PI / 2;
+        res_m.scale.set( 83, 83, 83 );
+        res_m.receiveShadow = true;
+        return res_m;
+    },
+    gen_fog: function () {
+        return new THREE.Fog( 0xf2f7ff, 1, 15000);
+        //res.push(new THREE.FogExp2(0x444444, 100000));
+    },
+    gen_lights: function (data, options) {
+        var res = [];
+
+        var hemiLight = new THREE.HemisphereLight(0xddeeff, 0xcccccc, 1.25);
+        //hemiLight.color.setHSL( 0.6, 1, 0.75 );
+        //hemiLight.groundColor.setHSL( 0.1, 0.8, 0.7 );
+        hemiLight.position.y = 500;
+        res.push(hemiLight);
+
+        //for()
+
+        var godlight = new THREE.DirectionalLight(0xffffff, 1);
+        //godlight.position.set(1, 100, 1);
+        
+        //var godlight = new THREE.SpotLight(0xffffff, 1);
+        //godlight.position.set(1000, 2000, 1500);
+        //godlight.angle = Math.PI / 2;
+        //godlight.distance = 100000;
+
+        //godlight.rotation.x = -Math.PI / 2 * 3;
+        godlight.castShadow = options.shadow != 0;
+        //godlight.onlyShadow = true;
+        godlight.shadowMapWidth = options.shadow;
+        godlight.shadowMapHeight = options.shadow;
+        godlight.shadowMapDarkness = 0.95;
+        godlight.shadowBias = -0.00125;
+        godlight.shadowCameraNear = 500;
+        godlight.shadowCameraFar = 100000;
+        godlight.shadowCameraFov = 30;
+        godlight.shadowCameraVisible = true;
+        
+        res.push(godlight);
+        
+        return res;
+    },
+    gen_scene: function () {
+        var res = [];
+        res.push(this.gen_wall());
+        res.push(this.gen_scene_cube());
+        res.push(this.gen_floor());
+        return res;
     },
     gen_trap: function (data, not_own) {
         if(_trap_cache == null) {
-            _trap_cache = new THREE.CylinderGeometry(0, 40, 15, 7, 1, false);
+            _trap_cache = new THREE.CylinderGeometry(0, 56, 28, 7, 1, false);
         }
-        var color = 0x444444;
+        var color = 0x333333;
         if(not_own)
-            color = 0x993333;
+            color = 0x662222;
         //var _trap_material = new THREE.MeshLambertMaterial({color: color});
-        var _trap_material = new THREE.MeshPhongMaterial({color: color, specular: 0x333333, shininess: 100});
+        var _trap_material = new THREE.MeshPhongMaterial({color: color, specular: 0xffffff, shininess: 1000});
         var res_m = new THREE.Mesh(_trap_cache, _trap_material);
         res_m.rotation.y = data[INDEX_D] * Math.PI / 180;
         res_m.position.x = data[INDEX_X];
-        res_m.position.y = 5;
+        res_m.position.y = 23;
         res_m.position.z = -data[INDEX_Z];
+        res_m.castShadow = true;
+        res_m.receiveShadow = true;
         return res_m;
     },
     gen_missile: function (data) {
+    
         if(_missile_cache == null) {
             _missile_cache = new THREE.CylinderGeometry(0, 5, 50, 10, 1, false);
             var adjust = new THREE.Matrix4();
             adjust.makeRotationX(-Math.PI / 2);
             _missile_cache.applyMatrix(adjust);
-            
         }
         
         //var res_m = new THREE.Mesh(_missile_cache, new THREE.MeshLambertMaterial({color: 0x444444}));
@@ -96,151 +185,79 @@ jcg_webgl.set_map_model(0, {
         res_m.position.x = data[INDEX_X];
         res_m.position.y = 100;
         res_m.position.z = -data[INDEX_Z];
+        var r = Math.random();
+        var size = 2;
+        if(r > 0.8)
+            size = 6;
+        else if(r > 0.5)
+            size = 3;
+        res_m.scale.x = size;
+        res_m.scale.y = size;
+        res_m.scale_z = size;
+        res_m.castShadow = true;
+        res_m.receiveShadow = true;
         return res_m;
     },
-    gen_box: function (data, d) {
+    gen_box: function (data, d) {        
         if(_box_cache == null) {
             _box_cache = new THREE.CubeGeometry(50, 50, 50);
+            //_box_material = new THREE.MeshLambertMaterial({color: 0x999966});
             //_box_material = new THREE.MeshLambertMaterial({color: 0xdddd66});
-            _box_material = new THREE.MeshPhongMaterial({color: 0xdddd66, specular: 0x333333, shininess: 100});
+            var texture = THREE.ImageUtils.loadTexture("images/textures/woodboard2.jpg");
+            texture.anisotropy = 8;
+            _box_material = new THREE.MeshPhongMaterial({color: 0xdddd66, specular: 0x333333, shininess: 100, map: texture});
         }
         var res_m = new THREE.Mesh(_box_cache, _box_material);
         res_m.rotation.y = (d || 50) * Math.PI / 180;
         res_m.position.x = data.x;
         res_m.position.y = 100;
         res_m.position.z = -data.z;
+        res_m.castShadow = true;
+        res_m.receiveShadow = true;
         return res_m;
     },
-    draw_background: function (cam) {
-        /*cam.graphics.fillStyle = "#ddd";
-        cam.graphics.fillRect(0, 0, cam.vport_width, cam.vport_height / 2);
-        cam.graphics.fillStyle = "#eee";
-        cam.graphics.fillRect(0, cam.vport_height / 2, cam.vport_width, cam.vport_height);*/
+    get_scene_cube_texture: function () {
+        return _scene_cube_texture;
     },
-    draw_others_status: function (cam, data, point) {
-        //var hp = data.hp + ' / 3';
-        //cam.graphics.fillText(hp, point.x - cam.graphics.measureText(hp).width / 2, point.y - 24);
-        /*for(var i = 0; i < 3; i++) {
-            cam.drawpolygon([
-                {x: point.x - 10, y: point.y - 30 + i * 6},
-                {x: point.x + 10, y: point.y - 30 + i * 6},
-                {x: point.x + 10, y: point.y - 25 + i * 6},
-                {x: point.x - 10, y: point.y - 25 + i * 6}
-            ], data.hp >= 3 - i ? '#d88' : '#fff');
-        }
-        cam.graphics.font = '10px Arial';
-        cam.graphics.fillStyle = '#000';
-        var name = data.name;
-        cam.graphics.fillText(name, point.x - cam.graphics.measureText(name).width / 2, point.y);*/
-        //var ip = data.ip.address + ':' + data.ip.port;
-        //cam.graphics.fillText(ip, point.x - cam.graphics.measureText(ip).width / 2, point.y);
-    },
-    draw_status: function (cam, data, boxes_data, start_time) {
-        
-        /*var self_hp = data[INDEX_HP][data[INDEX_INDEX]];
-        
-        //hp
-        for(var i = 0; i < 3; i++) {
-            cam.drawpolygon([
-                {x: 820, y: 10 + i * 21},
-                {x: 900, y: 10 + i * 21},
-                {x: 900, y: 28 + i * 21},
-                {x: 820, y: 28 + i * 21}
-            ], self_hp >= 3 - i ? '#aaa' : '#fff');
-        }
-        
-        //cd
-        if(data[INDEX_CD] > 0) {
-            cam.drawpolygon([
-                {x: 800 - data[INDEX_CD] / 20, y: 60},
-                {x: 800, y: 60},
-                {x: 800, y: 70},
-                {x: 800 - data[INDEX_CD] / 20, y: 70}
-            ], '#eee');
-        }
-        
-        //items
-        for(var i = 0; i < 4; i++) {
-            cam.drawpolygon([
-                {x: 610 + i * 50, y: 10},
-                {x: 650 + i * 50, y: 10},
-                {x: 650 + i * 50, y: 50},
-                {x: 610 + i * 50, y: 50}
-            ]);
-            cam.graphics.drawImage(_items_cache[_id_item_map[data[INDEX_ITEMS][i]]], 610 + i * 50, 10);
-        }
-        
-        //time
-        cam.graphics.font = '20px Arial';
-        cam.graphics.fillStyle = '#000';
-        var last = Math.floor((new Date().getTime() - start_time) / 1000);
-        var timetip = Math.floor(last / 60) + ':' + (last % 60 < 10 ? '0' + last % 60 : last % 60);
-        cam.graphics.fillText(timetip, 460 - cam.graphics.measureText(timetip).width / 2, 30);
-    
-        //game_status
-        if(data[INDEX_EVENTS].indexOf(EVENT_GAME_END) != -1) {
-            var gametip = '';
-            if(last == 300) {
-                gametip = '游戏结束';
-            } else if(self_hp == 0) {
-                gametip = '失败！';
-            } else {
-                gametip = '胜利！';
+    gen_scene_cube: function () {
+        if(_scene_cube_cache == null) {
+            /*var r = "images/textures/cube/skybox/";
+            var urls = [ r + "px.jpg", r + "nx.jpg",
+                         r + "py.jpg", r + "ny.jpg",
+                         r + "pz.jpg", r + "nz.jpg" ];
+            _scene_cube_texture = THREE.ImageUtils.loadTextureCube( urls );
+            
+            var shader = THREE.ShaderLib[ "cube" ];
+            shader.uniforms[ "tCube" ].value = _scene_cube_texture;
+
+            _scene_cube_material = new THREE.ShaderMaterial( {
+
+                fragmentShader: shader.fragmentShader,
+                vertexShader: shader.vertexShader,
+                uniforms: shader.uniforms,
+                depthWrite: false,
+                side: THREE.BackSide
+
+            } ),
+
+            _scene_cube_cache = new THREE.CubeGeometry( 10000, 10000, 10000 );*/
+
+            var vertexShader = "varying vec3 vWorldPosition;void main() {vec4 worldPosition = modelMatrix * vec4( position, 1.0 );vWorldPosition = worldPosition.xyz;gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );}";
+            var fragmentShader = "uniform vec3 topColor;uniform vec3 bottomColor;uniform float offset;uniform float exponent;varying vec3 vWorldPosition;void main() {float h = normalize( vWorldPosition + offset ).y;gl_FragColor = vec4( mix( bottomColor, topColor, max( pow( h, exponent ), 0.0 ) ), 1.0 );}";
+            var uniforms = {
+                topColor: 	 { type: "c", value: new THREE.Color( 0x0077ff ) },
+                bottomColor: { type: "c", value: new THREE.Color( 0xffffff ) },
+                offset:		 { type: "f", value: 400 },
+                exponent:	 { type: "f", value: 0.6 }
             }
-            cam.drawpolygon([
-                {x: 460 - cam.graphics.measureText(gametip).width / 2 - 30, y: 40},
-                {x: 460 + cam.graphics.measureText(gametip).width / 2 + 30, y: 40},
-                {x: 460 + cam.graphics.measureText(gametip).width / 2 + 30, y: 80},
-                {x: 460 - cam.graphics.measureText(gametip).width / 2 - 30, y: 80}
-            ]);
-            if(self_hp == 0) {
-                cam.graphics.fillStyle = '#448';
-            } else {
-                cam.graphics.fillStyle = '#844';
-            }
-            cam.graphics.font = '30px 黑体';
-            cam.graphics.fillText(gametip, 460 - cam.graphics.measureText(gametip).width / 2, 70);
-        } else if(self_hp == 0) {
-            var gametip = '你阵亡了。';
-            cam.drawpolygon([
-                {x: 460 - cam.graphics.measureText(gametip).width / 2 - 30, y: 40},
-                {x: 460 + cam.graphics.measureText(gametip).width / 2 + 30, y: 40},
-                {x: 460 + cam.graphics.measureText(gametip).width / 2 + 30, y: 80},
-                {x: 460 - cam.graphics.measureText(gametip).width / 2 - 30, y: 80}
-            ]);
-            cam.graphics.font = '30px 黑体';
-            cam.graphics.fillStyle = '#448';
-            cam.graphics.fillText(gametip, 460 - cam.graphics.measureText(gametip).width / 2, 70);
+            uniforms.topColor.value.setHSL(0.6, 1, 0.75);
+
+            //_scene.fog.color.copy( uniforms.bottomColor.value );
+
+            _scene_cube_cache = new THREE.SphereGeometry( 6000, 32, 15 );
+            _scene_cube_material = new THREE.ShaderMaterial( { vertexShader: vertexShader, fragmentShader: fragmentShader, uniforms: uniforms, side: THREE.BackSide } );
         }
-        
-        //map
-        cam.drawpolygon([
-            {x: 10, y: 10},
-            {x: 210, y: 10},
-            {x: 210, y: 210},
-            {x: 10, y: 210}
-        ]);
-        $.each(boxes_data, function () {
-            if(this.v) {
-                var _x = this.x;
-                var _z = this.z;
-                cam.drawcircle({x: 110 + _x / 20, y: 110 - _z / 20}, 3, '#ffd', '#aaa');
-            }
-        });
-        $.each(data[INDEX_CARS], function (i, n) {
-            var _x = this[INDEX_X];
-            var _z = this[INDEX_Z];
-            /*var signal = [[
-                {x: 0, y: -5, z: 0},
-                {x: 4, y: 5, z: 0},
-                {x: -4, y: 5, z: 0}
-            ]];
-            signal[0].color = jcg.color(i == data[INDEX_INDEX] ? '#eee' : '#d55');
-            jcg.roll(signal, -this[INDEX_D]);
-            jcg.move(signal, 110 + _x / 20, 110 - _z / 20, 0);
-            cam.drawpolygon(signal[0]);/
-            cam.drawcircle({x: 110 + _x / 20, y: 110 - _z / 20}, 5, jcg.color(i == data[INDEX_INDEX] ? '#eee' : '#d55'));
-        });*/
+        return new THREE.Mesh(_scene_cube_cache, _scene_cube_material);
     }
 });
 

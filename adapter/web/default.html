@@ -9,6 +9,7 @@
         <script type="text/javascript" src="./scripts/plugin.js"></script>
         <script type="text/javascript" src="./scripts/JSON.js"></script>
         <script type="text/javascript" src="./scripts/jschariot-const.js"></script>
+        <script type="text/javascript" src="./scripts/jschariot-game-ui.js"></script>
         <script type="text/javascript" src="./scripts/jschariot-network.js"></script>
         <script type="text/javascript" src="./scripts/jschariot-graphics-canvas.js"></script>
         <script type="text/javascript" src="./scripts/three.min.js"></script>
@@ -47,9 +48,33 @@
                     <span class="roomtitle">xxx的房间</span>
                     <input type="button" value="退出" class="quitbutton" />
                     <input type="checkbox" id="use_webgl" checked="checked" /><label for="use_webgl">使用WebGL</label>
+                    <span class="setting">阴影：</span>
+					<input type="radio" name="shadow" id="shadow0" value="0" />
+					<label for="shadow0">无</label>
+					<input type="radio" name="shadow" id="shadow512" value="512" checked="checked" />
+					<label for="shadow512">低</label>
+					<input type="radio" name="shadow" id="shadow1024" value="1024" />
+					<label for="shadow1024">高</label>
                 </div>
                 <div class="gamecontainer">
-                    <div class="playerinfo"></div>
+                    <div id="player_status">
+						<div class="tip"></div>
+						<div class="map"></div>
+						<div class="items">
+							<div class="item0 item"></div>
+							<div class="item1 item"></div>
+							<div class="item2 item"></div>
+							<div class="item3 item last"></div>
+							<div class="clear"></div>
+						</div>
+						<div class="hp">
+							<div class="hp3 h"></div>
+							<div class="hp2 h"></div>
+							<div class="hp1 h"></div>
+						</div>
+						<div class="cd"></div>
+						<div class="time"></div>
+					</div>
                     <div id="gamewindow_container"></id>
                 </div>
             </div>

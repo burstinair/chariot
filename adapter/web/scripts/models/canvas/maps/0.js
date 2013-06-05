@@ -14,20 +14,20 @@ for(var i = 0; i < _item_id_list.length; ++i) {
 jcg.set_map_model(0, {
     gen_wall: function () {
         var res = [];
-        var wall = jcg.plane(4300, 200);
-        jcg.move(wall, 0, -100, 2150);
+        var wall = jcg.plane(8300, 200);
+        jcg.move(wall, 0, -100, 4150);
         res.push(wall);
-        wall = jcg.plane(4300, 200);
+        wall = jcg.plane(8300, 200);
         jcg.yaw(wall, 180);
-        jcg.move(wall, 0, -100, -2150);
+        jcg.move(wall, 0, -100, -4150);
         res.push(wall);
-        wall = jcg.plane(4300, 200);
+        wall = jcg.plane(8300, 200);
         jcg.yaw(wall, -90);
-        jcg.move(wall, 2150, -100, 0);
+        jcg.move(wall, 4150, -100, 0);
         res.push(wall);
-        wall = jcg.plane(4300, 200);
+        wall = jcg.plane(8300, 200);
         jcg.yaw(wall, 90);
-        jcg.move(wall, -2150, -100, 0);
+        jcg.move(wall, -4150, -100, 0);
         res.push(wall);
         res.color = jcg.color('#');
         return res;
@@ -179,7 +179,7 @@ jcg.set_map_model(0, {
             if(this.v) {
                 var _x = this.x;
                 var _z = this.z;
-                cam.drawcircle({x: 110 + _x / 20, y: 110 - _z / 20}, 3, '#ffd', '#aaa');
+                cam.drawcircle({x: 110 + _x / 40, y: 110 - _z / 40}, 3, '#ffd', '#aaa');
             }
         });
         $.each(data[INDEX_CARS], function (i, n) {
@@ -194,7 +194,7 @@ jcg.set_map_model(0, {
             jcg.roll(signal, -this[INDEX_D]);
             jcg.move(signal, 110 + _x / 20, 110 - _z / 20, 0);
             cam.drawpolygon(signal[0]);*/
-            cam.drawcircle({x: 110 + _x / 20, y: 110 - _z / 20}, 5, jcg.color(i == data[INDEX_INDEX] ? '#eee' : '#d55'));
+            cam.drawcircle({x: 110 + _x / 40, y: 110 - _z / 40}, 5, jcg.color(i == data[INDEX_INDEX] ? '#eee' : '#d55'));
         });
     }
 });

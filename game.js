@@ -19,6 +19,7 @@ var ITEM_TRAP = 2;
 var ITEM_TRAP_HOLD = 101;
 
 var EVENT_GAME_END = "ge";
+var EVENT_DRAW = "gd";
 var EVENT_CAR_HIT_WALL = "chw";
 var EVENT_CAR_HIT_CAR = "chc";
 var EVENT_HIT_MISSLE = "hm";
@@ -155,7 +156,7 @@ Game.prototype.refresh_key_status = function (room_player, data) {
 exports = module.exports = Game;
 
 var hit = function (a, b, dis) {
-    var _testCount = 20 / Config.fps;
+    var _testCount = 30 / Config.fps;
     var apx = a.px || a.x;
     var apz = a.pz || a.z;
     var bpx = b.px || b.x;
@@ -188,16 +189,14 @@ Game.prototype.run = function () {
     var players = this.players;
     
     //运动
-    //for(var i = 0; i < world.boxes.length; i++) {
-    //    world.boxes[i].d = (world.boxes[i].d + Math.PI * time / 30) % (Math.PI * 2);
-    //}
     for(var i = 0; i < world.missiles.length; i++) {
         world.missiles[i].px = world.missiles[i].x;
         world.missiles[i].pz = world.missiles[i].z;
         world.missiles[i].x += world.missiles[i].xv * time;
         world.missiles[i].z += world.missiles[i].zv * time;
     }
-    for(var i = 0; i < players.length; i++) {
+    var car_f = [];
+    for(var i = 0, players_l = players.length; i < players_l; ++i) {
         var car_model = _get_car(world.cars[i].type);
         //前进方向分速度
         var _V = -Math.sin(world.cars[i].d) * world.cars[i].xv + Math.cos(world.cars[i].d) * world.cars[i].zv;
@@ -206,55 +205,65 @@ Game.prototype.run = function () {
         //漂移方向分速度
         var _xv = world.cars[i].xv - _XV;
         var _zv = world.cars[i].zv - _ZV;
-        if(players[i].hp > 0) {
-            //推力
-            var _F = 0;
-            if(players[i].key.onlyup) {
-                if(_V > 0) {
-                    if(_V < map_model.min_V)
-                        _V = map_model.min_V;
-                    _F = car_model.P / _V;
-                } else {
-                    _F = car_model.P / map_model.min_V;
-                }
-            } else if(players[i].key.onlydown) {
-                if(_V < 0) {
-                    if(_V > -map_model.min_V)
-                        _V = -map_model.min_V;
-                    _F = car_model.P / _V;
-                } else {
-                    _F = car_model.P / -map_model.min_V;
-                }
+        if(players[i].hp <= 0) {
+            players[i].key.data = "0";
+        }
+        //推力
+        var _F = 0;
+        if(players[i].key.onlyup) {
+            if(_V > 0) {
+                if(_V < map_model.min_V)
+                    _V = map_model.min_V;
+                _F = car_model.P / _V;
+            } else {
+                _F = car_model.P / map_model.min_V;
             }
-            //x、z方向分加速度((阻力 + 推动力) / 质量)
-            var xf = _XV * _XV * map_model.K * car_model.M + _xv * _xv * map_model._K * car_model.M;
-            if(world.cars[i].xv > 0)
-                xf = -xf;
-            var zf = _ZV * _ZV * map_model.K * car_model.M + _zv * _zv * map_model._K * car_model.M;
-            if(world.cars[i].zv > 0)
-                zf = -zf;
-            var xa = (xf + _F * -Math.sin(world.cars[i].d)) / car_model.M;
-            var za = (zf + _F * Math.cos(world.cars[i].d)) / car_model.M;
-            world.cars[i].xv += xa * time;
-            world.cars[i].zv += za * time;
-            //转向
-            if(players[i].key.onlyleft && players[i].key.onlyup || players[i].key.onlyright && players[i].key.onlydown) {
+        } else if(players[i].key.onlydown) {
+            if(_V < 0) {
+                if(_V > -map_model.min_V)
+                    _V = -map_model.min_V;
+                _F = car_model.Pb / _V;
+            } else {
+                _F = car_model.Pb / -map_model.min_V;
+            }
+        }
+        //摩擦力
+        var xf = _XV * _XV * map_model.K * car_model.M + _xv * _xv * map_model._K * car_model.M;
+        if(world.cars[i].xv > 0)
+            xf = -xf;
+        var zf = _ZV * _ZV * map_model.K * car_model.M + _zv * _zv * map_model._K * car_model.M;
+        if(world.cars[i].zv > 0)
+            zf = -zf;
+        
+        car_f.push({x: xf + _F * -Math.sin(world.cars[i].d), z: zf + _F * Math.cos(world.cars[i].d)});
+        //车-墙碰撞
+        map_model.adjust(world.cars[i], 0, _get_car(world.cars[i].type));
+        //车-车碰撞
+        for(var j = i + 1; j < players_l; ++j) {
+            
+        }
+        //x、z方向分加速度((阻力 + 推动力) / 质量)
+        var xa = car_f[i] / car_model.M;
+        var za = car_f[i] / car_model.M;
+        world.cars[i].xv += xa * time;
+        world.cars[i].zv += za * time;
+        //转向
+        if(players[i].key.onlyleft && players[i].key.onlyup || players[i].key.onlyright && players[i].key.onlydown) {
+            world.cars[i].d = (world.cars[i].d + car_model.DV) % (Math.PI * 2);
+            world.cars[i].da = 1;
+        } else if(players[i].key.onlyright && players[i].key.onlyup || players[i].key.onlyleft && players[i].key.onlydown) {
+            world.cars[i].d = (world.cars[i].d + Math.PI * 2 - car_model.DV) % (Math.PI * 2);
+            world.cars[i].da = -1;
+        } else {
+            var _vd = -Math.sin(world.cars[i].d) * world.cars[i].xv + Math.cos(world.cars[i].d) * world.cars[i].zv;
+            if(players[i].key.onlyleft && _vd > 0 || players[i].key.onlyright && _vd < 0) {
                 world.cars[i].d = (world.cars[i].d + car_model.DV) % (Math.PI * 2);
                 world.cars[i].da = 1;
-            } else if(players[i].key.onlyright && players[i].key.onlyup || players[i].key.onlyleft && players[i].key.onlydown) {
+            } else if(players[i].key.onlyright && _vd > 0 || players[i].key.onlyleft && _vd < 0) {
                 world.cars[i].d = (world.cars[i].d + Math.PI * 2 - car_model.DV) % (Math.PI * 2);
                 world.cars[i].da = -1;
             } else {
-                var _vd = Math.sin(world.cars[i].d) * world.cars[i].xv + Math.cos(world.cars[i].d) * world.cars[i].zv
-                if(players[i].key.onlyleft && _vd > 0 || players[i].key.onlyright && _vd < 0) {
-                    world.cars[i].d = (world.cars[i].d + car_model.DV) % (Math.PI * 2);
-                    world.cars[i].da = 1;
-                } else if(players[i].key.onlyright && _vd > 0 || players[i].key.onlyleft && _vd < 0) {
-                    world.cars[i].d = (world.cars[i].d + Math.PI * 2 - car_model.DV) % (Math.PI * 2);
-                    world.cars[i].da = -1;
-                } else {
-                    world.cars[i].da = 0;
-                }
+                world.cars[i].da = 0;
             }
         }
         //微速度停止处理
@@ -300,7 +309,7 @@ Game.prototype.run = function () {
     
     //释放道具
     for(var i = 0; i < players.length; i++) {
-        if(players[i].cd == 0) {
+        if(players[i].cd == 0 && players[i].hp > 0) {
             for(var j = 0; j < 4; j++) {
                 if(players[i].key.item(j)) {
                     switch(players[i].items[j]) {
@@ -314,8 +323,8 @@ Game.prototype.run = function () {
                                 x: world.cars[i].x,
                                 z: world.cars[i].z,
                                 d: world.cars[i].d,
-                                xv: 200 * -Math.sin(world.cars[i].d),
-                                zv: 200 * Math.cos(world.cars[i].d),
+                                xv: 300 * -Math.sin(world.cars[i].d),
+                                zv: 300 * Math.cos(world.cars[i].d),
                                 player: i
                             });
                             break;
@@ -339,17 +348,15 @@ Game.prototype.run = function () {
         }
     }
     
-    //碰撞
+    //其他碰撞
     //导弹-墙
     for(var j = 0; j < world.missiles.length; j++) {
-        if(map_model.check(world.missiles[j])) {
+        if(map_model.adjust(world.missiles[j], -150)) {
             world.missiles.splice(j, 1);
-            j--;
+            --j;
         }
     }
-    for(var i = 0; i < players.length; i++) {
-        //车-墙
-        map_model.adjust(world.cars[i]);
+    for(var i = 0, players_l = players.length; i < players_l; ++i) {
         //车-盒子
         for(var j = 0; j < world.boxes.length; j++) {
             if(world.boxes[j].cd == 0 && hit(world.cars[i], world.boxes[j], 90) && players[i].hp > 0) {
@@ -359,14 +366,21 @@ Game.prototype.run = function () {
                         break;
                 if(k < 4) {
                     world.boxes[j].cd = BOX_CD;
-                    players[i].items[k] = Math.floor(Math.random() * 2 + 1);
+                    var _key = Math.floor(Math.random() * 3);
+                    if(_key < 2)
+                        _key = 1;
+                    else
+                        _key = 2;
+                    players[i].items[k] = _key;
+                    //players[i].items[k] = Math.floor(Math.random() * 2 + 1);
+                    //players[i].items[k] = 1;
                 }
             }
         }
         if(players[i].hp > 0) {
             //车-炸弹
             for(var j = 0; j < world.traps.length; j++) {
-                if(world.traps[j].player != i && hit(world.cars[i], world.traps[j], 70)) {
+                if(world.traps[j].player != i && hit(world.cars[i], world.traps[j], 110)) {
                     players[i].hp--;
                     world.cars[i].xv /= 2;
                     world.cars[i].zv /= 2;
@@ -392,13 +406,16 @@ Game.prototype.run = function () {
     
     //游戏结束判断
     var alivecount = 0;
-    for(var i = 0; i < players.length; i++) {
+    for(var i = 0; i < players.length; ++i) {
         if(players[i].hp > 0)
-            alivecount++;
+            ++alivecount;
     }
     if(alivecount <= 1 || current_time - this.start_time >= GAME_TIME_LIMIT) {
         this.ended = 1;
         events[EVENT_GAME_END] = true;
+        if(alivecount < 1) {
+            events[EVENT_DRAW] = true;
+        }
     }
     
     //生成msg

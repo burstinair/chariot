@@ -1,8 +1,10 @@
 exports = module.exports = {
-    //功率
-    P: 10000,
+    //前进功率
+    P: 24000,
+    //后退功率
+    Pb: 5000,
     //车质量
     M: 50,
     //转向速率
-    DV: Math.PI / 36
+    DV: Math.PI / 48
 }

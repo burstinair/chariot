@@ -1,4 +1,4 @@
-﻿(function($, jcg_canvas, jcg_webgl, jcn){
+﻿(function($, jcg_canvas, jcg_webgl, jcn, jcu){
 //Ready
 $(function(){
 
@@ -8,19 +8,36 @@ $("input:submit, input[type=button]").button()
 $("input:text, input:password, textarea").css("border", "1px solid #ccc").css("cursor", "text");
 $("a").css("cursor", "pointer");
 $(".nicknameinput").val($.cookie('nickname') || '');
-var _use_webgl = $("#use_webgl").is(":checked");
+var _use_webgl = $.cookie('use_webgl') != 'false';
+if(_use_webgl) {
+    $("#use_webgl").attr("checked", "checked");
+} else {
+    $("#use_webgl").removeAttr("checked");
+}
 $("#use_webgl").change(function () {
     if(_use_webgl = $("#use_webgl").is(":checked")) {
         _canvas_game_window.hide();
         _webgl_game_window.show();
+        _player_status_panel.show();
     } else {
         _webgl_game_window.hide();
+        _player_status_panel.hide();
         _canvas_game_window.show();
     }
+    $.cookie('use_webgl', _use_webgl.toString().toLowerCase(), {expires: 365});
 });
 
 var _game_window_container = $("#gamewindow_container");
+var _player_status_panel = $("#player_status");
 var _canvas_game_window, _webgl_game_window;
+var _shadow_quality = parseInt($.cookie('shadow_quality') || '512');
+$("input#shadow" + _shadow_quality).attr("checked", "chekced");
+$("input[name=shadow]").change(function () {
+    if($(this).is(":checked")) {
+        _shadow_quality = parseInt($(this).val());
+        $.cookie('shadow_quality', _shadow_quality.toString().toLowerCase(), {expires: 365});
+    }
+});
 
 var jcg = {
     initialize: function (data) {
@@ -31,8 +48,10 @@ var jcg = {
         if(_use_webgl) {
             _canvas_game_window.hide();
             _webgl_game_window.show();
+            _player_status_panel.show();
         } else {
             _webgl_game_window.hide();
+            _player_status_panel.hide();
             _canvas_game_window.show();
         }
         
@@ -74,7 +93,7 @@ var doJoin = function () {
         }, function (data) {
             $.cookie('nickname', $(".nicknameinput").val(), {expires: 365});
             room = data;
-            $(".roomtitle").text(room.title);
+            $(".roomtitle").text([room.title, "(", room.id, ")"].join(''));
             $(".hall").hide();
             $(".room").show();
         });
@@ -87,7 +106,7 @@ var doCreate = function () {
         }, function (data) {
             $.cookie('nickname', $(".nicknameinput").val(), {expires: 365});
             room = data;
-            $(".roomtitle").text(room.title);
+            $(".roomtitle").text([room.title, "(", room.id, ")"].join(''));
             $(".hall").hide();
             $(".room").show();
         });
@@ -164,6 +183,7 @@ var _keyMap = {
 };
 jcn.socket.on(GAME_START, function(data) {
     if(data.id == room.id) {
+        jcu.reset();
         jcg.initialize(data);
         keyStatus = 0;
         alive = true;
@@ -196,7 +216,7 @@ jcn.socket.on(GAME_START, function(data) {
     }
 });
 jcn.socket.on(GAME_REFRESH, function (data) {
-    jcg.draw(data, room);
+    jcg.draw(data, room, {shadow: _shadow_quality});
     if(alive && data[INDEX_HP][data[INDEX_INDEX]] == 0) {
         alive = false;
         jcn.socket.emit("keystatus", 0);
@@ -219,4 +239,4 @@ $(".game .quitbutton").click(function() {
 });
 
 });
-})(jQuery, jschariot_graphics, jschariot_graphics_webgl, jschariot_network);
+})(jQuery, jschariot_graphics, jschariot_graphics_webgl, jschariot_network, jschariot_ui);

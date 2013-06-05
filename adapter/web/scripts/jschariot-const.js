@@ -1,5 +1,12 @@
 (function ($, window) {
 
+window.STATUS_LOADING =  10;
+window.STATUS_RUNNING = 20;
+window.STATUS_TIMEOUT = 30;
+window.STATUS_WIN = 40;
+window.STATUS_LOSE = 50;
+window.STATUS_DIE = 60;
+
 window.GAME_WIDTH = 920;
 window.GAME_HEIGHT = 600;
 
@@ -27,5 +34,6 @@ window.GAME_END = 'ge';
 window.GAME_REFRESH = 'gr';
 
 window.EVENT_GAME_END = "ge";
+window.EVENT_DRAW = "gd";
 
 })(jQuery, window);

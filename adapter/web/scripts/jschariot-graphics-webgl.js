@@ -70,6 +70,7 @@ var _initialize = function (data) {
 };
 
 var first = true;
+var drawing = false;
 
 window.jschariot_graphics_webgl = {
     initialize: _initialize,
@@ -82,6 +83,11 @@ window.jschariot_graphics_webgl = {
         _map_cache[map].loaded = true;
     },
     draw: function (data, _rinfo, options) {
+
+        if(drawing) {
+            return;
+        }
+        //drawing = true;
 
         var map = _get_map(data[INDEX_MAP_TYPE]);
 
@@ -165,6 +171,8 @@ window.jschariot_graphics_webgl = {
 
         _renderer.shadowMapEnabled = options.shadow != 0;
         _renderer.render(_scene, _camera);
+
+        drawing = false;
     }
 };
 

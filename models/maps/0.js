@@ -1,75 +1,81 @@
+var WIDTH = 8000,
+    HEIGHT = 8000;
+
 exports = module.exports = {
-    //前进方向阻力系数
-    K: 0.002,
-    //漂移方向阻力系数
-    _K: 0.01,
+    //静阻力系数
+    ks: 9,
+    //动阻力系数
+    kd: 7,
     //前进方向小速度
-    min_V: 5,
+    min_vf: 3,
     //漂移方向小速度
-    min_v: 10,
+    min_vt: 5,
     
-    width: 8000,
-    height: 8000,
+    width: WIDTH,
+    height: HEIGHT,
     barriers: [
         [{
-            x: -this.width / 2, z: this.height / 2
+            x: -WIDTH / 2, z: HEIGHT / 2
         }, {
-            x: this.width / 2, z: this.height / 2
+            x: WIDTH / 2, z: HEIGHT / 2
         }, {
-            x: this.width / 2, z: -this.height / 2
+            x: WIDTH / 2, z: -HEIGHT / 2
         }, {
-            x: -this.width / 2, z: -this.height / 2
+            x: -WIDTH / 2, z: -HEIGHT / 2
         },{
-            x: -this.width / 2, z: this.height / 2
+            x: -WIDTH / 2, z: HEIGHT / 2
         }]
     ],
     is_clockwise: function (point, line, valid_distance) {
         if(line.p1.x == line.p2.x)
-            return (line.p1.y < line.p2.y) == (line.p1.x > point.x);
+            return (line.p1.z < line.p2.z) == (line.p1.x > point.x);
         else if(line.p1.x == point.x)
-            return (line.p1.y < point.y) == (line.p1.x < line.p2.x);
+            return (line.p1.z < point.z) == (line.p1.x < line.p2.x);
         else
-            return ((line.p1.y - line.p2.y) / (line.p1.x - line.p2.x) < (line.p1.y - point.y) / (line.p1.x - point.x)) ^ ((line.p1.x <= line.p2.x) == (line.p1.x > point.x));
+            return ((line.p1.z - line.p2.z) / (line.p1.x - line.p2.x) < (line.p1.z - point.z) / (line.p1.x - point.x)) ^ ((line.p1.x <= line.p2.x) == (line.p1.x > point.x));
     },
     react: function (obj, line) {
-        
-        /*if(car.x > this.width / 2 && car.xv > 0) {
-            car.x = this.width / 2;
-            car.xv = -car.xv;
-        } else if(car.x < -this.width / 2 && car.xv < 0) {
-            car.x = -this.width / 2;
-            car.xv = -car.xv;
-        }
-        if(car.z > this.height / 2 && car.zv > 0) {
-            car.z = this.height / 2;
-            car.zv = -car.zv;
-        } else if(car.z < -this.height / 2 && car.zv < 0) {
-            car.z = -this.height / 2;
-            car.zv = -car.zv;
-        }*/
+        var k1, k2;
         if(line.p1.x == line.p2.x) {
-            if(p1.y > p2.y)
-        } else if(line.p1.y == line.p2.y) {
-            
+            if(line.p1.x > obj.x) {
+                k1 = 1;
+            } else {
+                k1 = -1;
+            }
+            k2 = 0;
+        } else if(line.p1.z == line.p2.z) {
+            k1 = 0;
+            if(line.p1.z > obj.z) {
+                k2 = 1;
+            } else {
+                k2 = -1;
+            }
         } else {
             var a = 1;
-            var b = (p2.x - p1.x) / (p1.y - p2.y);
-            var c = -p1.x - b * p1.y;
-            
+            var b = (p2.x - p1.x) / (p1.z - p2.z);
+            var c = -p1.x - b * p1.z;
+            var lx = -b * obj.z - c;
+            var lz = -(obj.x + c) / b;
+            var ll = Math.sqrt(lx * lx + lz * lz);
+            k1 = lz / ll;
+            k2 = lx / ll;
         }
+        var colli_v = obj.xv * k1 + obj.zv * k2;
+        obj.xv -= colli_v * k1 * 2;
+        obj.zv -= colli_v * k2 * 2;
     },
-    adjust: function (obj, distance, obj_model) {
+    adjust: function (obj, distance, do_react) {
         distance = distance || 0;
-        obj_model = obj_model || null;
+        do_react = do_react || false;
         var Fx = 0, Fz = 0;
         var res = false;
-        for(var i = 0, l = barriers.length; i < l; ++i) {
-            for(var j = 0, lb = barriers[i].length - 1; j < lb; ++j) {
-                var k = j + 1;
-                if(!is_clockwise(obj, {p1: j, p2: k}, distance)) {
+        for(var i = 0, l = this.barriers.length; i < l; ++i) {
+            for(var j = 0, lb = this.barriers[i].length - 1; j < lb; ++j) {
+                var line = {p1: this.barriers[i][j], p2: this.barriers[i][j + 1]};
+                if(this.is_clockwise(obj, line, distance)) {
                     res = true;
-                    if(obj_model) {
-                        react(obj, {p1: j, p2: k});
+                    if(do_react) {
+                        this.react(obj, line);
                     } else {
                         return true;
                     }
@@ -83,8 +89,8 @@ exports = module.exports = {
         var _c = Math.PI * 2 / playercount;
         for(var i = 0; i < playercount; i++) {
             res.push({
-                x: Math.sin(_c * i) * this.width / 20 * 9,
-                z: -Math.cos(_c * i) * this.height / 20 * 9,
+                x: Math.sin(_c * i) * WIDTH / 20 * 9,
+                z: -Math.cos(_c * i) * HEIGHT / 20 * 9,
                 d: _c * i
             });
         }
@@ -95,20 +101,20 @@ exports = module.exports = {
         var _c = Math.PI * 2 / playercount;
         for(var i = 0; i < playercount; i++) {
             res.push({
-                x: Math.sin(_c * i) * this.width / 20 * 6,
-                z: -Math.cos(_c * i) * this.height / 20 * 6
+                x: Math.sin(_c * i) * WIDTH / 20 * 6,
+                z: -Math.cos(_c * i) * HEIGHT / 20 * 6
             });
             res.push({
-                x: Math.sin(_c * i + Math.PI / 4) * this.width / 20 * 5,
-                z: -Math.cos(_c * i + Math.PI / 4) * this.height / 20 * 5
+                x: Math.sin(_c * i + Math.PI / 4) * WIDTH / 20 * 5,
+                z: -Math.cos(_c * i + Math.PI / 4) * HEIGHT / 20 * 5
             });
             res.push({
-                x: Math.sin(_c * i) * this.width / 20 * 3,
-                z: -Math.cos(_c * i) * this.height / 20 * 3
+                x: Math.sin(_c * i) * WIDTH / 20 * 3,
+                z: -Math.cos(_c * i) * HEIGHT / 20 * 3
             });
             res.push({
-                x: Math.sin(_c * i - Math.PI / 4) * this.width / 20 * 4,
-                z: -Math.cos(_c * i - Math.PI / 4) * this.height / 20 * 4
+                x: Math.sin(_c * i - Math.PI / 4) * WIDTH / 20 * 4,
+                z: -Math.cos(_c * i - Math.PI / 4) * HEIGHT / 20 * 4
             });
         }
         return res;

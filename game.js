@@ -37,7 +37,11 @@ var EVENT_HOODS_SUCCESS = "hs";
 
 var now = function () {
     return new Date().getTime();
-}
+};
+
+var round = function (ori) {
+    return Math.round(ori * 10000) / 10000;
+};
 
 var _car_cache = {};
 var _get_car = function (tp) {
@@ -45,14 +49,14 @@ var _get_car = function (tp) {
         _car_cache[tp] = require('./models/cars/' + tp);
     }
     return _car_cache[tp];
-}
+};
 var _map_cache = {};
 var _get_map = function (map) {
     if(_map_cache[map] == null) {
         _map_cache[map] = require('./models/maps/' + map);
     }
     return _map_cache[map];
-}
+};
 
 function Game (room) {
     var _map_model = _get_map(room.map);
@@ -74,6 +78,7 @@ function Game (room) {
             da: 0,
             xv: 0,
             zv: 0,
+            vf: 0,
             type: room.players[i].cartype
         };
         __players.push({hp: 3});
@@ -157,6 +162,7 @@ exports = module.exports = Game;
 
 var hit = function (a, b, dis) {
     var _testCount = 30 / Config.fps;
+    var dis2 = dis * dis;
     var apx = a.px || a.x;
     var apz = a.pz || a.z;
     var bpx = b.px || b.x;
@@ -170,7 +176,7 @@ var hit = function (a, b, dis) {
         apz += _paz;
         bpx += _pbx;
         bpz += _pbz;
-        if(Math.sqrt((apx - bpx) * (apx - bpx) + (apz - bpz) * (apz - bpz)) <= dis) {
+        if((apx - bpx) * (apx - bpx) + (apz - bpz) * (apz - bpz) <= dis2) {
             return true;
         }
     }
@@ -197,94 +203,177 @@ Game.prototype.run = function () {
     }
     var car_f = [];
     for(var i = 0, players_l = players.length; i < players_l; ++i) {
-        var car_model = _get_car(world.cars[i].type);
+        car_f.push({x: 0, z: 0});
+    }
+    for(var i = 0, players_l = players.length; i < players_l; ++i) {
+        var car = world.cars[i];
+        var car_model = _get_car(car.type);
         //前进方向分速度
-        var _V = -Math.sin(world.cars[i].d) * world.cars[i].xv + Math.cos(world.cars[i].d) * world.cars[i].zv;
-        var _XV = -Math.sin(world.cars[i].d) * _V;
-        var _ZV = Math.cos(world.cars[i].d) * _V;
+        var vf = car.vf = -Math.sin(car.d) * car.xv + Math.cos(car.d) * car.zv;
+        var vfx = -Math.sin(car.d) * vf;
+        var vfz = Math.cos(car.d) * vf;
+        //推力
+        var fp = 0;
+        if(players[i].key.onlyup) {
+            if(vf >= map_model.min_vf) {
+                fp = car_model.pf / vf;
+            } else {
+                fp = car_model.pf / map_model.min_vf;
+            }
+        } else if(players[i].key.onlydown) {
+            if(vf <= -map_model.min_vf) {
+                fp = car_model.pb / vf;
+            } else {
+                fp = car_model.pb / -map_model.min_vf;
+            }
+        }
+        car_f[i].x += fp * -Math.sin(car.d);
+        car_f[i].z += fp * Math.cos(car.d);
+
         //漂移方向分速度
-        var _xv = world.cars[i].xv - _XV;
-        var _zv = world.cars[i].zv - _ZV;
+        var vtx = car.xv - vfx;
+        var vtz = car.zv - vfz;
         if(players[i].hp <= 0) {
             players[i].key.data = "0";
         }
-        //推力
-        var _F = 0;
-        if(players[i].key.onlyup) {
-            if(_V > 0) {
-                if(_V < map_model.min_V)
-                    _V = map_model.min_V;
-                _F = car_model.P / _V;
-            } else {
-                _F = car_model.P / map_model.min_V;
-            }
-        } else if(players[i].key.onlydown) {
-            if(_V < 0) {
-                if(_V > -map_model.min_V)
-                    _V = -map_model.min_V;
-                _F = car_model.Pb / _V;
-            } else {
-                _F = car_model.Pb / -map_model.min_V;
+        
+        //阻力
+        var gravity = car_model.m * 0.98;
+        var ff = -Math.sin(car.d) * car_f[i].x + Math.cos(car.d) * car_f[i].z;
+        var ffx = -Math.sin(car.d) * ff;
+        var ffz = Math.cos(car.d) * ff;
+        var ftx = car_f[i].x - ffx;
+        var ftz = car_f[i].z - ffz;
+        var fricx = 0, fricz = 0;
+        if(vf != 0) {
+            var absvf = Math.abs(vf);
+            var fricf = map_model.kd * car_model.kf * gravity;
+            fricx = vfx * fricf / absvf;
+            car_f[i].x -= fricx;
+            fricz = vfz * fricf / absvf;
+            car_f[i].z -= fricz;
+        } else {
+            if(ff != 0) {
+                var max_ffs = map_model.ks * car_model.kf * gravity;
+                ff = Math.abs(ff);
+                if(ff <= max_ffs) {
+                    car_f[i].x -= ffx;
+                    car_f[i].z -= ffz;
+                } else {
+                    car_f[i].x -= ffx * max_ffs / ff;
+                    car_f[i].z -= ffz * max_ffs / ff;
+                }
             }
         }
-        //摩擦力
-        var xf = _XV * _XV * map_model.K * car_model.M + _xv * _xv * map_model._K * car_model.M;
-        if(world.cars[i].xv > 0)
-            xf = -xf;
-        var zf = _ZV * _ZV * map_model.K * car_model.M + _zv * _zv * map_model._K * car_model.M;
-        if(world.cars[i].zv > 0)
-            zf = -zf;
+        var vt = round(Math.sqrt(vtx * vtx + vtz * vtz));
+        if(vt > 0) {
+            var frict = map_model.kd * car_model.kt * gravity;
+            var frictx = vtx * frict / vt;
+            fricx += frictx;
+            car_f[i].x -= frictx;
+            var frictz = vtz * frict / vt;
+            fricz += frictz;
+            car_f[i].z -= frictz;
+        } else {
+            var ft = Math.sqrt(ftx * ftx + ftz * ftz);
+            if(ft > 0) {
+                var max_fts = map_model.ks * car_model.kt * gravity;
+                if(ft <= max_fts) {
+                    car_f[i].x -= ftx;
+                    car_f[i].z -= ftz;
+                } else {
+                    car_f[i].x -= ftx * max_fts / ft;
+                    car_f[i].z -= ftz * max_fts / ft;
+                }
+            }
+        }
         
-        car_f.push({x: xf + _F * -Math.sin(world.cars[i].d), z: zf + _F * Math.cos(world.cars[i].d)});
-        //车-墙碰撞
-        map_model.adjust(world.cars[i], 0, _get_car(world.cars[i].type));
+        //x、z方向分加速度((阻力 + 推动力) / 质量)
+        var xa = car_f[i].x / car_model.m;
+        var za = car_f[i].z / car_model.m;
+        var prev_xv = car.xv;
+        car.xv += xa * time;
+        if(car.xv * fricx > 0 && car.xv * prev_xv <= 0) {
+            car.xv = 0;
+        }
+        var prev_zv = car.zv;
+        car.zv += za * time;
+        if(car.zv * fricz > 0 && car.zv * prev_zv <= 0) {
+            car.zv = 0;
+        }
+    }
+
+    for(var i = 0, players_l = players.length; i < players_l; ++i) {
+        var car = world.cars[i];
+        var car_model = _get_car(car.type);
+        var vf = car.vf;
+        //冲量补偿
         //车-车碰撞
         for(var j = i + 1; j < players_l; ++j) {
-            
+            var car2 = world.cars[j];
+            if(hit(car, car2, 245)) {
+                var car2_model = _get_car(car2.type);
+                var mz = car2.z - car.z;
+                var mx = car2.x - car.x;
+                var mc = Math.sqrt(mz * mz + mx * mx);
+                var k1 = mx / mc;
+                var k2 = mz / mc;
+                var v10 = k1 * car.xv + k2 * car.zv;
+                if(v10 < 0) {
+                    v10 = 0;
+                }
+                var v20 = k1 * car2.xv + k2 * car2.zv;
+                if(v20 > 0) {
+                    v20 = 0;
+                }
+                var v1 = ((car_model.m - car2_model.m) * v10 + 2 * car2_model.m * v20) / (car_model.m + car2_model.m);
+                var v2 = ((car2_model.m - car_model.m) * v20 + 2 * car_model.m * v10) / (car_model.m + car2_model.m);
+                car.xv += k1 * (v1 - v10);
+                car.zv += k2 * (v1 - v10);
+                car2.xv += k1 * (v2 - v20);
+                car2.zv += k2 * (v2 - v20);
+            }
         }
-        //x、z方向分加速度((阻力 + 推动力) / 质量)
-        var xa = car_f[i] / car_model.M;
-        var za = car_f[i] / car_model.M;
-        world.cars[i].xv += xa * time;
-        world.cars[i].zv += za * time;
+        //车-墙碰撞
+        map_model.adjust(car, 0, true);
         //转向
         if(players[i].key.onlyleft && players[i].key.onlyup || players[i].key.onlyright && players[i].key.onlydown) {
-            world.cars[i].d = (world.cars[i].d + car_model.DV) % (Math.PI * 2);
-            world.cars[i].da = 1;
+            car.d = (car.d + car_model.dv) % (Math.PI * 2);
+            car.da = 1;
         } else if(players[i].key.onlyright && players[i].key.onlyup || players[i].key.onlyleft && players[i].key.onlydown) {
-            world.cars[i].d = (world.cars[i].d + Math.PI * 2 - car_model.DV) % (Math.PI * 2);
-            world.cars[i].da = -1;
+            car.d = (car.d + Math.PI * 2 - car_model.dv) % (Math.PI * 2);
+            car.da = -1;
         } else {
-            var _vd = -Math.sin(world.cars[i].d) * world.cars[i].xv + Math.cos(world.cars[i].d) * world.cars[i].zv;
+            var _vd = -Math.sin(car.d) * car.xv + Math.cos(car.d) * car.zv;
             if(players[i].key.onlyleft && _vd > 0 || players[i].key.onlyright && _vd < 0) {
-                world.cars[i].d = (world.cars[i].d + car_model.DV) % (Math.PI * 2);
-                world.cars[i].da = 1;
+                car.d = (car.d + car_model.dv) % (Math.PI * 2);
+                car.da = 1;
             } else if(players[i].key.onlyright && _vd > 0 || players[i].key.onlyleft && _vd < 0) {
-                world.cars[i].d = (world.cars[i].d + Math.PI * 2 - car_model.DV) % (Math.PI * 2);
-                world.cars[i].da = -1;
+                car.d = (car.d + Math.PI * 2 - car_model.dv) % (Math.PI * 2);
+                car.da = -1;
             } else {
-                world.cars[i].da = 0;
+                car.da = 0;
             }
         }
         //微速度停止处理
-        _V = -Math.sin(world.cars[i].d) * world.cars[i].xv + Math.cos(world.cars[i].d) * world.cars[i].zv;
-        _XV = -Math.sin(world.cars[i].d) * _V;
-        _ZV = Math.cos(world.cars[i].d) * _V;
-        _xv = world.cars[i].xv - _XV;
-        _zv = world.cars[i].zv - _ZV;
-        if(Math.abs(_xv) < map_model.min_v)
-            world.cars[i].xv = _XV;
-        if(Math.abs(_zv) < map_model.min_v)
-            world.cars[i].zv = _ZV;
-        if(Math.abs(world.cars[i].xv) < map_model.min_V)
-            world.cars[i].xv = 0;
-        if(Math.abs(world.cars[i].zv) < map_model.min_V)
-            world.cars[i].zv = 0;
+        vf = -Math.sin(car.d) * car.xv + Math.cos(car.d) * car.zv;
+        vfx = -Math.sin(car.d) * vf;
+        vfz = Math.cos(car.d) * vf;
+        vtx = car.xv - vfx;
+        vtz = car.zv - vfz;
+        if(Math.abs(vtx) < map_model.min_vt)
+            car.xv = vfx;
+        if(Math.abs(vtz) < map_model.min_vt)
+            car.zv = vfz;
+        if(Math.abs(car.xv) < map_model.min_vf)
+            car.xv = 0;
+        if(Math.abs(car.zv) < map_model.min_vf)
+            car.zv = 0;
         //运动
-        world.cars[i].px = world.cars[i].x;
-        world.cars[i].pz = world.cars[i].z;
-        world.cars[i].x += world.cars[i].xv * time;
-        world.cars[i].z += world.cars[i].zv * time;
+        car.px = car.x;
+        car.pz = car.z;
+        car.x += car.xv * time;
+        car.z += car.zv * time;
     }
     
     //CD
@@ -475,7 +564,7 @@ Game.prototype.gen_msg = function (index) {
     res.push(index);
     
     //速度
-    res.push(Math.floor(-Math.sin(this.world.cars[index].d) * this.world.cars[index].xv + Math.cos(this.world.cars[index].d) * this.world.cars[index].zv));
+    res.push(Math.floor(this.world.cars[index].vf));
     
     res.push(this.players[index].items);
     res.push(Math.floor(this.players[index].cd));

@@ -133,10 +133,10 @@ window.jschariot_graphics_webgl = {
                 }
             });
             $.each(data[INDEX_TRAPS], function () {
-                _scene.add(map.gen_trap(this, this[INDEX_OWNER] != data[INDEX_INDEX]));
+                _scene.add(_get_car(this[INDEX_TYPE]).gen_trap(this, this[INDEX_OWNER] != data[INDEX_INDEX]));
             });
             $.each(data[INDEX_MISSILES], function () {
-                _scene.add(map.gen_missile(this));
+                _scene.add(_get_car(this[INDEX_TYPE]).gen_missile(this));
             });
         }
         

@@ -10,6 +10,9 @@ exports = module.exports = {
     min_vf: 3,
     //漂移方向小速度
     min_vt: 5,
+
+    //冲量衰减
+    impulse_reduce: 0.2,
     
     width: WIDTH,
     height: HEIGHT,
@@ -37,7 +40,7 @@ exports = module.exports = {
     react: function (obj, line) {
         var k1, k2;
         if(line.p1.x == line.p2.x) {
-            if(line.p1.x > obj.x) {
+            if(line.p1.z >= line.p2.z) {
                 k1 = 1;
             } else {
                 k1 = -1;
@@ -45,7 +48,7 @@ exports = module.exports = {
             k2 = 0;
         } else if(line.p1.z == line.p2.z) {
             k1 = 0;
-            if(line.p1.z > obj.z) {
+            if(line.p1.x <= line.p2.x) {
                 k2 = 1;
             } else {
                 k2 = -1;
@@ -59,10 +62,16 @@ exports = module.exports = {
             var ll = Math.sqrt(lx * lx + lz * lz);
             k1 = lz / ll;
             k2 = lx / ll;
+            if(b > 0) {
+                k1 = -k1;
+                k2 = -k2;
+            }
         }
         var colli_v = obj.xv * k1 + obj.zv * k2;
-        obj.xv -= colli_v * k1 * 2;
-        obj.zv -= colli_v * k2 * 2;
+        if(colli_v > 0) {
+            obj.xv -= colli_v * k1 * (2 - this.impulse_reduce);
+            obj.zv -= colli_v * k2 * (2 - this.impulse_reduce);
+        }
     },
     adjust: function (obj, distance, do_react) {
         distance = distance || 0;

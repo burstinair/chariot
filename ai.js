@@ -6,7 +6,7 @@ var ai_next_id = 0;
 function AI() {
     var newai = {
         id: "ai",
-        cartype: 0,
+        car_type: 0,
         name: 'AI' + ai_next_id++ + '号',
         ip: {
             address: 'AI',

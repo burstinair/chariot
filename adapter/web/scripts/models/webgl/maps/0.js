@@ -18,8 +18,6 @@ var _scene_cube_cache = null,
     _floor_material = null,
     _wall_cache = null,
     _wall_material = null,
-    _trap_cache = null,
-    _missile_cache = null,
     _box_cache = null,
     _box_material = null;
 
@@ -32,8 +30,6 @@ jcg_webgl.set_map_model(0, {
         _floor_material = null;
         _wall_cache = null;
         _wall_material = null;
-        _trap_cache = null;
-        _missile_cache = null;
         _box_cache = null;
         _box_material = null;
     },
@@ -151,52 +147,6 @@ jcg_webgl.set_map_model(0, {
         res.push(this.gen_scene_cube());
         res.push(this.gen_floor());
         return res;
-    },
-    gen_trap: function (data, not_own) {
-        if(_trap_cache == null) {
-            _trap_cache = new THREE.CylinderGeometry(0, 56, 28, 7, 1, false);
-        }
-        var color = 0x333333;
-        if(not_own)
-            color = 0x662222;
-        //var _trap_material = new THREE.MeshLambertMaterial({color: color});
-        var _trap_material = new THREE.MeshPhongMaterial({color: color, specular: 0xffffff, shininess: 1000});
-        var res_m = new THREE.Mesh(_trap_cache, _trap_material);
-        res_m.rotation.y = data[INDEX_D] * Math.PI / 180;
-        res_m.position.x = data[INDEX_X];
-        res_m.position.y = 23;
-        res_m.position.z = -data[INDEX_Z];
-        res_m.castShadow = true;
-        res_m.receiveShadow = true;
-        return res_m;
-    },
-    gen_missile: function (data) {
-    
-        if(_missile_cache == null) {
-            _missile_cache = new THREE.CylinderGeometry(0, 5, 50, 10, 1, false);
-            var adjust = new THREE.Matrix4();
-            adjust.makeRotationX(-Math.PI / 2);
-            _missile_cache.applyMatrix(adjust);
-        }
-        
-        //var res_m = new THREE.Mesh(_missile_cache, new THREE.MeshLambertMaterial({color: 0x444444}));
-        var res_m = new THREE.Mesh(_missile_cache, new THREE.MeshPhongMaterial({color: 0x444444, specular: 0x333333, shininess: 100}));
-        res_m.rotation.y = data[INDEX_D] * Math.PI / 180;
-        res_m.position.x = data[INDEX_X];
-        res_m.position.y = 100;
-        res_m.position.z = -data[INDEX_Z];
-        var r = Math.random();
-        var size = 2;
-        if(r > 0.8)
-            size = 6;
-        else if(r > 0.5)
-            size = 3;
-        res_m.scale.x = size;
-        res_m.scale.y = size;
-        res_m.scale_z = size;
-        res_m.castShadow = true;
-        res_m.receiveShadow = true;
-        return res_m;
     },
     gen_box: function (data, d) {        
         if(_box_cache == null) {

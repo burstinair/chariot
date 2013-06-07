@@ -7,7 +7,7 @@ function Player(socket, data)
     var newplayer = {
         socket: socket,
         id: player_next_id++,
-        cartype: 0,
+        car_type: 0,
         name: data.name,
         ip: socket.remoteAddress,
         status: '未准备',
@@ -20,7 +20,7 @@ function Player(socket, data)
 Player.prototype.gen_msg = function () {
     return {
         id: this.id,
-        cartype: this.cartype,
+        car_type: this.car_type,
         name: this.name,
         ip: this.ip,
         status: this.status,

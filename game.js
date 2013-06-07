@@ -44,22 +44,22 @@ var round = function (ori) {
 };
 
 var _car_cache = {};
-var _get_car = function (tp) {
-    if(_car_cache[tp] == null) {
-        _car_cache[tp] = require('./models/cars/' + tp);
+var _get_car = function (car_type) {
+    if(_car_cache[car_type] == null) {
+        _car_cache[car_type] = require('./models/cars/' + car_type);
     }
-    return _car_cache[tp];
+    return _car_cache[car_type];
 };
 var _map_cache = {};
-var _get_map = function (map) {
-    if(_map_cache[map] == null) {
-        _map_cache[map] = require('./models/maps/' + map);
+var _get_map = function (map_type) {
+    if(_map_cache[map_type] == null) {
+        _map_cache[map_type] = require('./models/maps/' + map_type);
     }
-    return _map_cache[map];
+    return _map_cache[map_type];
 };
 
 function Game (room) {
-    var _map_model = _get_map(room.map);
+    var _map_model = _get_map(room.map_type);
     var _players = [];
     var _cars = _map_model.initialize_cars(room.players.length);
     var _boxes = _map_model.initialize_boxes(room.players.length);
@@ -79,7 +79,7 @@ function Game (room) {
             xv: 0,
             zv: 0,
             vf: 0,
-            type: room.players[i].cartype
+            type: room.players[i].car_type
         };
         __players.push({hp: 3});
         __cars.push({x: 0, z: 0, d: 0, da: 0});
@@ -90,7 +90,7 @@ function Game (room) {
     var res = {
         start_time: null,
         ended: 0,
-        map: room.map,
+        map_type: room.map_type,
         players: _players,
         room: room,
         world: {
@@ -190,7 +190,7 @@ Game.prototype.run = function () {
     var current_time = now();
     world.last_time = current_time - world.start_time;
     var time = (current_time - world.sign_time) / 100;
-    var map_model = _get_map(this.map);
+    var map_model = _get_map(this.map_type);
     
     var players = this.players;
     
@@ -399,6 +399,7 @@ Game.prototype.run = function () {
     //释放道具
     for(var i = 0; i < players.length; i++) {
         if(players[i].cd == 0 && players[i].hp > 0) {
+            var car_model = _get_car(world.cars[i].type);
             for(var j = 0; j < 4; j++) {
                 if(players[i].key.item(j)) {
                     switch(players[i].items[j]) {
@@ -412,9 +413,10 @@ Game.prototype.run = function () {
                                 x: world.cars[i].x,
                                 z: world.cars[i].z,
                                 d: world.cars[i].d,
-                                xv: 300 * -Math.sin(world.cars[i].d),
-                                zv: 300 * Math.cos(world.cars[i].d),
-                                player: i
+                                xv: car_model.missile_v * -Math.sin(world.cars[i].d),
+                                zv: car_model.missile_v * Math.cos(world.cars[i].d),
+                                player: i,
+                                type: world.cars[i].type
                             });
                             break;
                         case 2:
@@ -427,7 +429,8 @@ Game.prototype.run = function () {
                                 d: world.cars[i].d,
                                 player: i,
                                 index: j,
-                                cd: TRAP_LAST_TIME
+                                cd: TRAP_LAST_TIME,
+                                type: world.cars[i].type
                             });
                             break;
                     }
@@ -514,7 +517,7 @@ Game.prototype.run = function () {
         ev.push(evt);
     }
     this.msg.push(ev);
-    this.msg.push(this.map);
+    this.msg.push(this.map_type);
     var msg_boxes_status = 0;
     for(var i = 0; i < world.boxes.length; i++) {
         msg_boxes_status = (msg_boxes_status << 1) | (world.boxes[i].cd == 0 ? 1 : 0);
@@ -539,7 +542,9 @@ Game.prototype.run = function () {
         msg_missiles.push([
             Math.floor(world.missiles[i].x),
             Math.floor(world.missiles[i].z),
-            Math.floor(world.missiles[i].d * ANGLE_RATIO)
+            Math.floor(world.missiles[i].d * ANGLE_RATIO),
+            world.missiles[i].player,
+            world.missiles[i].type
         ]);
     }
     this.msg.push(msg_missiles);
@@ -549,7 +554,8 @@ Game.prototype.run = function () {
             Math.floor(world.traps[i].x),
             Math.floor(world.traps[i].z),
             Math.floor(world.traps[i].d * ANGLE_RATIO),
-            world.traps[i].player
+            world.traps[i].player,
+            world.traps[i].type
         ]);
     }
     this.msg.push(msg_traps);

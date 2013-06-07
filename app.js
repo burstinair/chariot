@@ -61,6 +61,24 @@ Network.on('connection', function (socket) {
             }
         });
     });
+    socket.on('set_map', function (data) {
+        socket.get('playerinfo', function (err, player) {
+            if(player != null) {
+                socket.emit("reply_set_map", {suc: true});
+                player.room.map_type = data;
+                player.room.refresh();
+            }
+        });
+    });
+    socket.on('set_car', function (data) {
+        socket.get('playerinfo', function (err, player) {
+            if(player != null) {
+                socket.emit("reply_set_car", {suc: true});
+                player.car_type = data;
+                player.room.refresh();
+            }
+        });
+    });
     socket.on('keystatus', function (data) {
         socket.get('playerinfo', function (err, player) {
             if(player != null) {

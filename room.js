@@ -11,7 +11,7 @@ function Room(title)
         id: room_next_id++,
         is_in_game: false,
         players: [],
-        map: 0,
+        map_type: 0,
         title: title,
         game: null
     };
@@ -26,6 +26,7 @@ Room.prototype.gen_msg = function () {
     return {
         title: this.title,
         id: this.id,
+        map_type: this.map_type,
         players: _players
     };
 }

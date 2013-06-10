@@ -79,7 +79,90 @@
         }
     });
 })(jQuery);
-;/*
+/*
+ * Synchronous
+ */
+(function ($, window, document) {
+
+    var context = {
+        start: function(runnable, parameters) {
+            setTimeout(function () {
+                runnable.call(null, parameters);
+            }, 0);
+        },
+        lock: function (has_context, callback, __parent_done_one) {
+            var res = {
+                has_context: has_context || false,
+                callback: callback || null
+            };
+            var require_count = 0;
+            var done_count = 0;
+            var started = false;
+            var done = false;
+            var try_callback = function () {
+                if(done_count >= require_count && started && !done) {
+                    done_count = require_count;
+                    done = true;
+                    if(res.callback) {
+                        res.callback.call();
+                    }
+                    if(__parent_done_one) {
+                        __parent_done_one.call();
+                    }
+                }
+                //$.log('try_callback', require_count, done_count);
+            };
+            var done_one = function () {
+                ++done_count;
+                try_callback();
+            };
+            res.start = function () {
+                started = true;
+                try_callback();
+            };
+            res.is_done = function () {
+                return done;
+            };
+            res.done_one = function () {
+                if(!res.has_context) {
+                    done_one();
+                }
+            };
+            res.done_some = function (count) {
+                if(!res.has_context) {
+                    done_count += count || 0;
+                    try_callback();
+                }
+            };
+            res.require = function (count) {
+                //$.log('require', require_count, done_count);
+                if(res.has_context) {
+                    ++require_count;
+                    var has_done = false;
+                    return {
+                        done: function () {
+                            if(!has_done) {
+                                has_done = true;
+                                done_one();
+                            }
+                        }
+                    };
+                } else {
+                    require_count += count || 1;
+                }
+            };
+            res.require_lock = function (has_context, callback) {
+                //$.log('require_lock', require_count, done_count);
+                ++require_count;
+                return context.lock(has_context, callback, done_one);
+            };
+            return res;
+        }
+    }
+    $.extend(context);
+
+})(jQuery, window, document);
+/*
  * jQuery Console
  */
 (function ($, window, document) {

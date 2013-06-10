@@ -2,10 +2,11 @@
 
 body
 {
-    background : url("../images/back.jpg") repeat-x;
+    -webkit-user-select : none;
+    /*background : url("../images/background.jpg") repeat-x;*/
     margin : 0;
     padding : 0;
-    font-family: "Helvetica Neue", "Lucida Grande", "Segoe UI", Arial, Helvetica, Verdana, sans-serif, "宋体", "黑体", "微软雅黑";
+    font-family: "微软雅黑", "黑体", "Helvetica Neue", "Lucida Grande", "Segoe UI", Arial, Helvetica, Verdana, sans-serif, "宋体";
     color : #333;
     text-align : center;
     cursor : default;
@@ -79,25 +80,81 @@ a
 }
 .room .playerlist
 {
-    background : #f7f7f7;
-    padding : 5px;
     margin-top : 5px;
 }
 .room .playerlist .playerlist_item
 {
     color : #444;
     border : solid 1px #f7f7f7;
-    padding : 2px 5px;
+    padding : 10px 10px;
+    width : 260px;
+    height : 100px;
+    background : #f7f7f7;
+    line-height : 16px;
+    font-size : 12px;
+    float : left;
+    margin : 5px;
 }
-.room .playerlist .playerlist_item span.status
+.room .playerlist .playerlist_item img.playerlist_car_type
+{
+    width : 100px;
+    height : 100px;
+    float : left;
+}
+.room .playerlist .playerlist_item .playerlist_info
+{
+    float : left;
+    margin-left : 10px;
+}
+.room .playerlist .playerlist_item .playerlist_name
+{
+    font-size : 14px;
+    line-height : 20px;
+}
+.room .playerlist .playerlist_item .playerlist_status
 {
     color : #933;
-    padding : 0 3px;
 }
-.room .playerlist .playerlist_item span.ip
+.room .playerlist .playerlist_item .playerlist_ip
 {
     color : #aaa;
-    padding : 0 3px;
+}
+.team_selector
+{
+    height : 20px;
+    padding : 2px;
+    width : 60px;
+    display : inline-block;
+    margin : 0 0 -10px 0;
+    position : relative;
+}
+.team_selector_single_line
+{
+    display : block;
+    margin : 0 0 -2px 0;
+}
+.team_selector .display_panel
+{
+    height : 16px;
+}
+.team_selector .selector_panel
+{
+    position : absolute;
+    left : 0;
+    top : 0;
+    width : 124px;
+    height : 62px;
+    display : none;
+    border : solid 1px #999;
+    background : #f8f8f8;
+    padding : 2px;
+}
+.team_selector .selector_panel .team_color
+{
+    float : left;
+    margin : 2px;
+    width : 27px;
+    height : 27px;
 }
 .game
 {
@@ -108,7 +165,7 @@ a
     width : 920px;
     height : 600px;
 }
-.gamecontainer  #player_status
+.gamecontainer #player_status
 {
     position : absolute;
     right : 19px;
@@ -116,8 +173,21 @@ a
     width : 920px;
     height : 600px;
 	border : solid 1px #666;
+    overflow : hidden;
 }
-.gamecontainer  #player_status .tip
+.gamecontainer #player_status .subtitle
+{
+    font-size : 24px;
+    height : 30px;
+    line-height : 30px;
+    width : auto;
+    color : #fff;
+    position : absolute;
+    text-shadow : 0px 0px 1px #000;
+    z-index : 200;
+    white-space : nowrap;
+}
+.gamecontainer #player_status .tip
 {
     position : absolute;
 	z-index : 100;
@@ -128,13 +198,20 @@ a
 	background : #f8f8f8;
 	font-size : 50px;
 	color : #333;
-	font-family : 微软雅黑,黑体,宋体;
 	text-align : center;
-	line-height : 200px;
+    vertical-align : middle;
+    line-height : 200px;
 	border : solid 10px #666;
 	display : none;
 }
-.gamecontainer  #player_status .items
+.gamecontainer #player_status .tip_loading {
+    width : 900px;
+    height : 600px;
+    line-height : 600px;
+    left : 0px;
+    top : 0px;
+}
+.gamecontainer #player_status .items
 {
     position : absolute;
 	right : 120px;
@@ -142,7 +219,7 @@ a
 	width : 190px;
 	height : 40px;
 }
-.gamecontainer  #player_status .items .item
+.gamecontainer #player_status .items .item
 {
 	width : 38px;
 	height : 38px;
@@ -152,11 +229,11 @@ a
 	float : left;
 	border-radius : 4px;
 }
-.gamecontainer  #player_status .items .last
+.gamecontainer #player_status .items .last
 {
 	margin-right : 0px;
 }
-.gamecontainer  #player_status .hp
+.gamecontainer #player_status .hp
 {
 	position : absolute;
 	right : 20px;
@@ -164,20 +241,15 @@ a
 	width : 80px;
 	height : 60px;
 }
-.gamecontainer  #player_status .hp .h
+.gamecontainer #player_status .hp .h
 {
-	background : #c66;
 	border : solid 1px #666;
 	width : 78px;
 	height : 18px;
 	margin-bottom : 1px;
 	border-radius : 4px;
 }
-.gamecontainer  #player_status .hp .hurt
-{
-	background : #f8f8f8;
-}
-.gamecontainer  #player_status .cd
+.gamecontainer #player_status .cd
 {
 	position : absolute;
 	right : 120px;
@@ -188,7 +260,7 @@ a
 	background : #eee;
 	display : none;
 }
-.gamecontainer  #player_status .time
+.gamecontainer #player_status .time
 {
 	position : absolute;
 	right : 425px;
@@ -196,11 +268,11 @@ a
 	width : 70px;
 	height : 24px;
 	text-align : center;
-	font-family : 微软雅黑,黑体,宋体;
 	font-size : 24px;
+    font-weight : bold;
 	line-height : 24px;
 }
-.gamecontainer  #player_status .map
+.gamecontainer #player_status .map
 {
 	position : absolute;
 	left : 10px;
@@ -229,12 +301,19 @@ a
 
 .map_car
 {
-    border : solid 2px #666;
     position : absolute;
     z-index : 50;
-    width : 9px;
-    height : 9px;
-    border-radius : 6px;
+    width : 12px;
+    height : 12px;
+    border-radius : 9px;
+}
+
+.map_car.self
+{
+    width : 10px;
+    height : 10px;
+    border-radius : 10px;
+    border : solid 2px #666;
 }
 
 #gamewindow_container

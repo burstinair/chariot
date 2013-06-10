@@ -1,8 +1,8 @@
-ÔËÐÐstart.bat¿ªÆô·þÎñÆ÷£¬Web·þÎñÆ÷½«ÔËÐÐÓÚ±¾»ú8050¶Ë¿Ú¡£
-¿ªÆô·þÎñÆ÷ºó£¬´Óä¯ÀÀÆ÷£¨ÐèÖ§³ÖHTML5£©´ò¿ªURL£º
+è¿è¡Œstart.batå¼€å¯æœåŠ¡å™¨ï¼ŒWebæœåŠ¡å™¨å°†è¿è¡ŒäºŽæœ¬æœº8050ç«¯å£ã€‚
+å¼€å¯æœåŠ¡å™¨åŽï¼Œä»Žæµè§ˆå™¨ï¼ˆéœ€æ”¯æŒHTML5ï¼‰æ‰“å¼€URLï¼š
 http://localhost:8050
-¼´¿É¡£
+å³å¯ã€‚
 
-ÈôÔËÐÐÓÚLinux»òÆäËû·ÇWindowsÆ½Ì¨£¬ÐèÒª°²×°nodejs£¬Ö®ºó´Ó±¾Ä¿Â¼ÔËÐÐ£º
+è‹¥è¿è¡ŒäºŽLinuxæˆ–å…¶ä»–éžWindowså¹³å°ï¼Œéœ€è¦å®‰è£…nodejsï¼Œä¹‹åŽä»Žæœ¬ç›®å½•è¿è¡Œï¼š
 node app
-¼´¿É¿ªÆô·þÎñÆ÷¡£
+å³å¯å¼€å¯æœåŠ¡å™¨ã€‚

@@ -3,6 +3,49 @@
 $(function(){
 
 //Initialize
+var gen_team_selector = function (enabled) {
+    enabled = enabled !== false;
+    var res = $("<div class='team_selector'></div>");
+    var selector = $("<div class='selector_panel'></div>").appendTo(res);
+    var display = $("<div class='display_panel'></div>").appendTo(res).click(function (event) {
+        if(enabled) {
+            if(selector.is(":visible")) {
+                selector.fadeOut('fast');
+            } else {
+                selector.fadeIn('fast');
+                event.stopPropagation();
+            }
+        }
+    });
+    $('body').click(function () {
+        selector.fadeOut();
+    });
+    var show = function (team) {
+        display.css('background', '#' + TEAM_COLORS[team].toString(16));
+    };
+    for(var i = 0, l = TEAM_COLORS.length; i < l; ++i) {
+        $("<div class='team_color'></div>")
+            .attr('rel', i)
+            .css('background', '#' + TEAM_COLORS[i].toString(16))
+            .appendTo(selector)
+            .click($.proxy(function () {
+                show(this.team);
+                selector.fadeOut('fast');
+                res.trigger("change", this.team);
+            }, {team: i}));
+    }
+    $("<div class='clear'></div>").appendTo(selector);
+    res.val = function (team, trigger_event) {
+        trigger_event = trigger_event || false;
+        show(team);
+        if(trigger_event) {
+            res.trigger("change", team);
+        }
+        return res;
+    };
+    return res;
+};
+
 $("input:submit, input[type=button]").button()
     .css("font-size", "12px").css("overflow", "hidden").css("padding", "0px 12px").height(24);
 $("input:text, input:password, textarea").css("border", "1px solid #ccc").css("cursor", "text");
@@ -30,6 +73,7 @@ $("#use_webgl").change(function () {
 var _game_window_container = $("#gamewindow_container");
 var _player_status_panel = $("#player_status");
 var _canvas_game_window, _webgl_game_window;
+
 var _shadow_quality = parseInt($.cookie('shadow_quality') || '512');
 $("input#shadow" + _shadow_quality).attr("checked", "chekced");
 $("input[name=shadow]").change(function () {
@@ -37,6 +81,28 @@ $("input[name=shadow]").change(function () {
         _shadow_quality = parseInt($(this).val());
         $.cookie('shadow_quality', _shadow_quality.toString().toLowerCase(), {expires: 365});
     }
+})
+
+jcu.all_colors = $.cookie('all_colors') != 'false';
+if(jcu.all_colors) {
+    $("#all_colors").attr("checked", "checked");
+} else {
+    $("#all_colors").removeAttr("checked");
+}
+$("#all_colors").change(function () {
+    jcu.all_colors = $("#all_colors").is(":checked");
+    $.cookie('all_colors', jcu.all_colors.toString().toLowerCase(), {expires: 365});
+});
+
+jcu.show_subtitles = $.cookie('show_subtitles') != 'false';
+if(jcu.show_subtitles) {
+    $("#show_subtitles").attr("checked", "checked");
+} else {
+    $("#show_subtitles").removeAttr("checked");
+}
+$("#show_subtitles").change(function () {
+    jcu.show_subtitles = $("#show_subtitles").is(":checked");
+    $.cookie('show_subtitles', jcu.show_subtitles.toString().toLowerCase(), {expires: 365});
 });
 
 var jcg = {
@@ -72,6 +138,16 @@ $('body').append($.console({paused: false, hide: false, showtip: false})
 
 //Hall
 var room = null;
+var self_player_id = null;
+var get_self = function () {
+    for(var i = 0, l = room.players.length; i < l; ++i) {
+        if(room.players[i].id == self_player_id) {
+            return room.players[i];
+        }
+    }
+    return null;
+};
+
 var checkNickname = function (notip) {
     if (/^(?!.{20}|\s*$)/g.test($(".nicknameinput").val() || '')) {
         return true;
@@ -92,7 +168,8 @@ var doJoin = function () {
             name: $(".nicknameinput").val()
         }, function (data) {
             $.cookie('nickname', $(".nicknameinput").val(), {expires: 365});
-            room = data;
+            room = data.room;
+            self_player_id = data.id;
             $(".roomtitle").text([room.title, "(", room.id, ")"].join(''));
             $(".hall").hide();
             $(".room").show();
@@ -105,7 +182,8 @@ var doCreate = function () {
             name: $(".nicknameinput").val()
         }, function (data) {
             $.cookie('nickname', $(".nicknameinput").val(), {expires: 365});
-            room = data;
+            room = data.room;
+            self_player_id = data.id;
             $(".roomtitle").text([room.title, "(", room.id, ")"].join(''));
             $(".hall").hide();
             $(".room").show();
@@ -142,9 +220,19 @@ jcn.socket.on("refresh_hall", function(data) {
 $(".room .readybutton").click(function () {
     jcn.request(null, "ready", null, $.noop);
 });
+$(".room .map_select").change(function () {
+    jcn.request(null, "set_map", $(this).val(), $.noop);
+});
+$(".room .car_select").change(function () {
+    jcn.request(null, "set_car", $(this).val(), $.noop);
+});
 $(".room .addaibutton").click(function () {
     jcn.request(null, "addai", null, $.noop);
 });
+$('.room .actions').append('队伍：');
+var team_selector = gen_team_selector().change(function (event, team) {
+    jcn.request(null, "set_team", team, $.noop);
+}).appendTo($('.room .actions'));
 $(".room .quitbutton").click(function () {
     jcn.request("退出房间", "quit", null, function() {
         room = null;
@@ -155,16 +243,59 @@ $(".room .quitbutton").click(function () {
 jcn.socket.on("refresh_room", function(data) {
     if(data && room && data.id == room.id) {
         room = data;
-        $(".playerlist .playerlist_item").remove();
-        $.each(room.players, function() {
+
+        $(".map_select option").remove();
+        $.each(room.map_type_list, function() {
             if(this != null) {
-                var _citem = $("<div></div>");
-                var _statusspan = $("<span></span>").addClass("status").text(this.status);
-                var _ipspan = $("<span></span>").addClass("ip").text(this.ip.address + ':' + this.ip.port);
-                _citem.addClass("playerlist_item").append(_statusspan).append(_ipspan).append(this.name);
+                var _citem = $("<option></option>");
+                _citem.text(this.name);
+                _citem.val(this.id);
+                $(".map_select").append(_citem);
+            }
+        });
+        $(".map_select :selected").removeAttr("selected");
+        $(".map_select option[value=" + room.map_type + "]").attr("selected", "selected");
+
+        var car_types = {};
+        $(".car_select option").remove();
+        $.each(room.car_type_list, function() {
+            if(this != null) {
+                var _citem = $("<option></option>");
+                _citem.text(this.name);
+                _citem.val(this.id);
+                car_types[this.id] = this.name;
+                $(".car_select").append(_citem);
+            }
+        });
+        $(".car_select :selected").removeAttr("selected");
+        $(".car_select option[value=" + get_self().car_type + "]").attr("selected", "selected");
+
+        $(".playerlist").empty();
+        $.each(room.players, function(index) {
+            if(this != null) {
+                var _citem = $("<div class='playerlist_item'></div>");
+                //var car_type_panel = $("<img class='playerlist_car_type' src='images/cars/" + this.car_type + ".jpg' alt='" + car_types[this.car_type] + "'></img>")
+                var car_type_panel = $("<img class='playerlist_car_type' alt='" + car_types[this.car_type] + "'></img>")
+                    .appendTo(_citem);
+                var info_panel = $("<div class='playerlist_info'></div>").appendTo(_citem);
+                var _name = $("<div class='playerlist_name'></div>").text(this.name).appendTo(info_panel);
+                var _ip = $("<div class='playerlist_ip'></div>").text(this.ip.address + ':' + this.ip.port).appendTo(info_panel);
+                if(this.ai) {
+                    var _team = gen_team_selector().addClass('team_selector_single_line').change(function (event, team) {
+                        jcn.request('', 'set_ai_team', {index: index, team: team}, $.noop);
+                    }).val(this.team).appendTo(info_panel);
+                    var _car_type = $("<div class='playerlist_car_type'></div>").text(car_types[this.car_type]).appendTo(info_panel);
+                } else {
+                    var _team = gen_team_selector(false).addClass('team_selector_single_line').val(this.team).appendTo(info_panel);
+                    var _car_type = $("<div class='playerlist_car_type'></div>").text(car_types[this.car_type]).appendTo(info_panel);
+                }
+                var _status = $("<div class='playerlist_status'></div>").text(this.status).appendTo(info_panel);
                 $(".playerlist").append(_citem);
             }
         });
+        $(".playerlist").append("<div class='clear'></div>");
+
+        team_selector.val(get_self().team);
     }
 });
 //Game
@@ -179,7 +310,7 @@ var _keyMap = {
     "65": 8,    //a
     "83": 4,    //s
     "68": 2,    //d
-    "70": 1,    //f
+    "70": 1    //f
 };
 jcn.socket.on(GAME_START, function(data) {
     if(data.id == room.id) {
@@ -216,10 +347,11 @@ jcn.socket.on(GAME_START, function(data) {
     }
 });
 jcn.socket.on(GAME_REFRESH, function (data) {
-    jcg.draw(data, room, {shadow: _shadow_quality});
+    jcg.draw(data, room, {shadow: _shadow_quality, all_colors: jcu.all_colors});
     if(alive && data[INDEX_HP][data[INDEX_INDEX]] == 0) {
         alive = false;
-        jcn.socket.emit("keystatus", 0);
+        keyCapture = null;
+        jcn.socket.emit("keystatus", "0");
     }
 });
 jcn.socket.on(GAME_END, function () {

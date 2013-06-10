@@ -1,7 +1,9 @@
+var BaseMap = require('../../base_map');
+
 var WIDTH = 8000,
     HEIGHT = 8000;
 
-exports = module.exports = {
+var map_0 = {
     //静阻力系数
     ks: 9,
     //动阻力系数
@@ -16,7 +18,7 @@ exports = module.exports = {
     
     width: WIDTH,
     height: HEIGHT,
-    barriers: [
+    polygon_barriers: [
         [{
             x: -WIDTH / 2, z: HEIGHT / 2
         }, {
@@ -29,70 +31,9 @@ exports = module.exports = {
             x: -WIDTH / 2, z: HEIGHT / 2
         }]
     ],
-    is_clockwise: function (point, line, valid_distance) {
-        if(line.p1.x == line.p2.x)
-            return (line.p1.z < line.p2.z) == (line.p1.x > point.x);
-        else if(line.p1.x == point.x)
-            return (line.p1.z < point.z) == (line.p1.x < line.p2.x);
-        else
-            return ((line.p1.z - line.p2.z) / (line.p1.x - line.p2.x) < (line.p1.z - point.z) / (line.p1.x - point.x)) ^ ((line.p1.x <= line.p2.x) == (line.p1.x > point.x));
-    },
-    react: function (obj, line) {
-        var k1, k2;
-        if(line.p1.x == line.p2.x) {
-            if(line.p1.z >= line.p2.z) {
-                k1 = 1;
-            } else {
-                k1 = -1;
-            }
-            k2 = 0;
-        } else if(line.p1.z == line.p2.z) {
-            k1 = 0;
-            if(line.p1.x <= line.p2.x) {
-                k2 = 1;
-            } else {
-                k2 = -1;
-            }
-        } else {
-            var a = 1;
-            var b = (p2.x - p1.x) / (p1.z - p2.z);
-            var c = -p1.x - b * p1.z;
-            var lx = -b * obj.z - c;
-            var lz = -(obj.x + c) / b;
-            var ll = Math.sqrt(lx * lx + lz * lz);
-            k1 = lz / ll;
-            k2 = lx / ll;
-            if(b > 0) {
-                k1 = -k1;
-                k2 = -k2;
-            }
-        }
-        var colli_v = obj.xv * k1 + obj.zv * k2;
-        if(colli_v > 0) {
-            obj.xv -= colli_v * k1 * (2 - this.impulse_reduce);
-            obj.zv -= colli_v * k2 * (2 - this.impulse_reduce);
-        }
-    },
-    adjust: function (obj, distance, do_react) {
-        distance = distance || 0;
-        do_react = do_react || false;
-        var Fx = 0, Fz = 0;
-        var res = false;
-        for(var i = 0, l = this.barriers.length; i < l; ++i) {
-            for(var j = 0, lb = this.barriers[i].length - 1; j < lb; ++j) {
-                var line = {p1: this.barriers[i][j], p2: this.barriers[i][j + 1]};
-                if(this.is_clockwise(obj, line, distance)) {
-                    res = true;
-                    if(do_react) {
-                        this.react(obj, line);
-                    } else {
-                        return true;
-                    }
-                }
-            }
-        }
-        return res;
-    },
+    circle_barriers: [
+        //{x: , y: , r: , type: "in" or "out"}
+    ],
     initialize_cars: function (playercount) {
         var res = [];
         var _c = Math.PI * 2 / playercount;
@@ -129,3 +70,7 @@ exports = module.exports = {
         return res;
     }
 }
+
+map_0.__proto__ = BaseMap;
+
+exports = module.exports = map_0;

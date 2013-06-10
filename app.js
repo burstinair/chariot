@@ -13,11 +13,12 @@ Network.on('connection', function (socket) {
         socket.get('playerinfo', function (err, player) {
             if(player == null) {
                 var player = new Player(socket, data);
+            } else {
+                player.name = data.name;
             }
             socket.set('playerinfo', player, function () {
-                player.status = "未准备";
                 var room = new Room(player.name + '的房间');
-                socket.emit("reply_create", {suc: true, data: room.gen_msg()});
+                socket.emit("reply_create", {suc: true, data: {room: room.gen_msg(), id: player.id}});
                 room.add_player(player);
             });
         });
@@ -26,6 +27,8 @@ Network.on('connection', function (socket) {
         socket.get('playerinfo', function (err, player) {
             if(player == null) {
                 var player = new Player(socket, data);
+            } else {
+                player.name = data.name;
             }
             socket.set('playerinfo', player, function () {
                 var room = Room.find(data.id);
@@ -34,9 +37,7 @@ Network.on('connection', function (socket) {
                 } else if(room.is_in_game) {
                     socket.emit("reply_join", {suc: false, data: '房间正在游戏中。'});
                 } else {
-                    player.status = "未准备";
-                    socket.emit("reply_join", {suc: true, data: room.gen_msg()});
-                    player.room = room;
+                    socket.emit("reply_join", {suc: true, data: {room: room.gen_msg(), id: player.id}});
                     room.add_player(player);
                 }
             });
@@ -76,6 +77,41 @@ Network.on('connection', function (socket) {
                 socket.emit("reply_set_car", {suc: true});
                 player.car_type = data;
                 player.room.refresh();
+            }
+        });
+    });
+    socket.on('set_team', function (data) {
+        socket.get('playerinfo', function (err, player) {
+            if(player != null) {
+                socket.emit("reply_set_team", {suc: true});
+                player.team = data;
+                player.room.refresh();
+                player.room.check_start_game();
+            }
+        });
+    });
+    socket.on('set_ai_car', function (data) {
+        socket.get('playerinfo', function (err, player) {
+            if(player != null) {
+                var ai = player.room.players[data.index];
+                if(ai && ai.isAI) {
+                    socket.emit("reply_set_ai_car", {suc: true});
+                    ai.car_type = data.type;
+                    player.room.refresh();
+                }
+            }
+        });
+    });
+    socket.on('set_ai_team', function (data) {
+        socket.get('playerinfo', function (err, player) {
+            if(player != null) {
+                var ai = player.room.players[data.index];
+                if(ai && ai.isAI) {
+                    socket.emit("reply_set_ai_team", {suc: true});
+                    ai.team = data.team;
+                    player.room.refresh();
+                    player.room.check_start_game();
+                }
             }
         });
     });

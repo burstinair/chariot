@@ -13,6 +13,8 @@
         <script type="text/javascript" src="./scripts/jschariot-network.js"></script>
         <script type="text/javascript" src="./scripts/jschariot-graphics-canvas.js"></script>
         <script type="text/javascript" src="./scripts/three.min.js"></script>
+        <script type="text/javascript" src="./scripts/loaders/MTLLoader.js"></script>
+        <script type="text/javascript" src="./scripts/loaders/OBJMTLLoader.js"></script>
         <script type="text/javascript" src="./scripts/jschariot-graphics-webgl.js"></script>
         <script type="text/javascript" src="./scripts/jschariot-ui.js"></script>
     </head>
@@ -37,6 +39,12 @@
                     <input type="button" value="退出" class="quitbutton" />
                     <input type="button" value="准备" class="readybutton" />
                     <input type="button" value="添加AI" class="addaibutton" />
+                    地图:
+                    <select class="map_select">
+                    </select>
+                    车:
+                    <select class="car_select">
+                    </select>
                 </div>
                 <div class="playerlist">
                     <div class="playerlist_item">
@@ -47,14 +55,25 @@
                 <div class="actions">
                     <span class="roomtitle">xxx的房间</span>
                     <input type="button" value="退出" class="quitbutton" />
-                    <input type="checkbox" id="use_webgl" checked="checked" /><label for="use_webgl">使用WebGL</label>
-                    <span class="setting">阴影：</span>
+
+                    <input type="checkbox" id="use_webgl" checked="checked" />
+                    <label for="use_webgl">使用WebGL</label>
+
+                    <span class="setting">渲染质量：</span>
 					<input type="radio" name="shadow" id="shadow0" value="0" />
-					<label for="shadow0">无</label>
+					<label for="shadow0">低</label>
 					<input type="radio" name="shadow" id="shadow512" value="512" checked="checked" />
-					<label for="shadow512">低</label>
+					<label for="shadow512">中</label>
 					<input type="radio" name="shadow" id="shadow1024" value="1024" />
 					<label for="shadow1024">高</label>
+
+                    <span class="setting">
+                        <input type="checkbox" id="show_subtitles" checked="checked" /><label for="show_subtitles">弹幕</label>
+                    </span>
+
+                    <span class="setting">
+                        <input type="checkbox" id="all_colors" checked="checked" /><label for="all_colors">队伍全色</label>
+                    </span>
                 </div>
                 <div class="gamecontainer">
                     <div id="player_status">
@@ -75,11 +94,11 @@
 						<div class="cd"></div>
 						<div class="time"></div>
 					</div>
-                    <div id="gamewindow_container"></id>
+                    <div id="gamewindow_container"></div>
                 </div>
             </div>
             <div class="footer">
-                by Burst in Oct, 2011.
+                by Burst in Oct, 2011 - Jul, 2013.
             </div>
         </div>
     </body>

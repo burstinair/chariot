@@ -345,11 +345,13 @@ var _get_map = function (map) {
     }
 };
 var _start_time = 0;
+var _map_type = null;
 var _boxes_data = [];
 var _target = null;
 var _initialize = function (data) {
     _start_time = data.start_time;
     _boxes_data = data.boxes;
+    _map_type = data.map_type;
     _target = $("<canvas width='" + GAME_WIDTH + "' height='" + GAME_HEIGHT + "'></canvas>");
     return _target;
 };
@@ -511,7 +513,10 @@ var _camera = function (vport, position) {
 var _scene = function (data, map) {
     var _items = [];
     $.each(data[INDEX_CARS], function () {
-        var car = _get_car(this[INDEX_TYPE]);
+        var car_type = this[INDEX_TYPE];
+        //For adapt
+        car_type = 0;
+        var car = _get_car(car_type);
         if(car != null) {
             _items.push(car.gen_car(this));
         }
@@ -563,7 +568,10 @@ window.jschariot_graphics = {
             z: d_pos[INDEX_Z],
             d: d_pos[INDEX_D]
         });
-        var map = _get_map(data[INDEX_MAP_TYPE]);
+
+        //For adapt
+        var map_type = 0;
+        var map = _get_map(map_type);
         
         //boxes visible
         var _box_visible_status = parseInt(data[INDEX_BOXES], 36);

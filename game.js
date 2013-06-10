@@ -1,6 +1,8 @@
 ﻿var Config = require('./config'),
     Network = require('./network'),
-    KeyStatus = require('./key_status');
+    KeyStatus = require('./key_status'),
+    ModelManager = require('./model_manager'),
+    Utils = require('./utils');
 
 var ANGLE_RATIO = 180 / Math.PI;
 
@@ -22,52 +24,24 @@ var EVENT_GAME_END = "ge";
 var EVENT_DRAW = "gd";
 var EVENT_CAR_HIT_WALL = "chw";
 var EVENT_CAR_HIT_CAR = "chc";
-var EVENT_HIT_MISSLE = "hm";
+var EVENT_MISSILE_HIT_WALL = "mhw";
+var EVENT_HIT_MISSILE = "hm";
 var EVENT_HIT_TRAP = "ht";
 var EVENT_GET_ITEM = "gi";
-var EVENT_USE_ITEM_CD_TIMEUP = "tu";
 var EVENT_LAUNCH_MISSILE = "lm";
 var EVENT_LAY_TRAP = "lt";
 var EVENT_OPEN_HOODS = "oh";
 var EVENT_HIT_HOODS = "hh";
-var EVENT_BRAKE = "b";
-var EVENT_MISSLE_SUCCESS = "ms";
-var EVENT_TRAP_SUCCESS = "ts";
-var EVENT_HOODS_SUCCESS = "hs";
-
-var now = function () {
-    return new Date().getTime();
-};
-
-var round = function (ori) {
-    return Math.round(ori * 10000) / 10000;
-};
-
-var _car_cache = {};
-var _get_car = function (car_type) {
-    if(_car_cache[car_type] == null) {
-        _car_cache[car_type] = require('./models/cars/' + car_type);
-    }
-    return _car_cache[car_type];
-};
-var _map_cache = {};
-var _get_map = function (map_type) {
-    if(_map_cache[map_type] == null) {
-        _map_cache[map_type] = require('./models/maps/' + map_type);
-    }
-    return _map_cache[map_type];
-};
+var EVENT_DRIFT = "dft";
 
 function Game (room) {
-    var _map_model = _get_map(room.map_type);
+    var _map_model = ModelManager.get_map(room.map_type);
     var _players = [];
     var _cars = _map_model.initialize_cars(room.players.length);
     var _boxes = _map_model.initialize_boxes(room.players.length);
-    var __players = [];
-    var __cars = [];
     for(var i = 0; i < room.players.length; ++i) {
         _players.push({
-            items: [0, 0, 0, 0], hp: 3, cd: 0, key: new KeyStatus()
+            items: [0, 0, 0, 0], hp: 3, cd: 0, key: new KeyStatus(), team: room.players[i].team
         });
         _cars[i] = {
             px: _cars[i].x,
@@ -81,8 +55,6 @@ function Game (room) {
             vf: 0,
             type: room.players[i].car_type
         };
-        __players.push({hp: 3});
-        __cars.push({x: 0, z: 0, d: 0, da: 0});
     }
     for(var i = 0; i < _boxes.length; ++i) {
         _boxes[i].cd = 0;
@@ -90,7 +62,7 @@ function Game (room) {
     var res = {
         start_time: null,
         ended: 0,
-        map_type: room.map_type,
+        map: _map_model,
         players: _players,
         room: room,
         world: {
@@ -106,10 +78,13 @@ function Game (room) {
 }
 Game.prototype.start = function () {
     var game = this;
-    game.start_time = game.world.sign_time = now();
+    game.start_time = game.world.sign_time = Utils.now();
     var start_msg = {
         id: game.room.id,
         boxes: [],
+        barriers: {polygon: game.map.polygon_barriers, circle: game.map.circle_barriers},
+        map_type: game.room.map_type,
+        car_types: [],
         start_time: game.start_time
     };
     for(var i = 0; i < game.world.boxes.length; ++i) {
@@ -118,9 +93,12 @@ Game.prototype.start = function () {
             z: game.world.boxes[i].z
         });
     }
+    for(var i = 0; i < game.world.cars.length; ++i) {
+        start_msg.car_types.push(game.world.cars[i].type);
+    }
     game.ticker = setInterval(function () {
         game.run();
-        for(var i = 0; i < game.room.players.length; i++) {
+        for(var i = 0, l = game.room.players.length; i < l; ++i) {
             if(game.room.players[i].isAI) {
                 game.room.players[i].run(game, i);
             } else {
@@ -130,7 +108,7 @@ Game.prototype.start = function () {
         if(game.ended) {
             game.end();
             setTimeout(function () {
-                for(var i = 0; i < game.room.players.length; i++) {
+                for(var i = 0, l = game.room.players.length; i < l; ++i) {
                     if(!game.room.players[i].isAI) {
                         game.room.players[i].socket.emit(GAME_END);
                     }
@@ -160,37 +138,14 @@ Game.prototype.refresh_key_status = function (room_player, data) {
 
 exports = module.exports = Game;
 
-var hit = function (a, b, dis) {
-    var _testCount = 30 / Config.fps;
-    var dis2 = dis * dis;
-    var apx = a.px || a.x;
-    var apz = a.pz || a.z;
-    var bpx = b.px || b.x;
-    var bpz = b.pz || b.z;
-    var _pax = (a.x - apx) / _testCount;
-    var _paz = (a.z - apz) / _testCount;
-    var _pbx = (b.x - bpx) / _testCount;
-    var _pbz = (b.z - bpz) / _testCount;
-    for(var i = 0; i < _testCount; i++) {
-        apx += _pax;
-        apz += _paz;
-        bpx += _pbx;
-        bpz += _pbz;
-        if((apx - bpx) * (apx - bpx) + (apz - bpz) * (apz - bpz) <= dis2) {
-            return true;
-        }
-    }
-    return false;
-}
-
 Game.prototype.run = function () {
-    var events = {};
+    var events = [];
 
     var world = this.world;
-    var current_time = now();
+    var current_time = Utils.now();
     world.last_time = current_time - world.start_time;
     var time = (current_time - world.sign_time) / 100;
-    var map_model = _get_map(this.map_type);
+    var map_model = this.map;
     
     var players = this.players;
     
@@ -207,12 +162,15 @@ Game.prototype.run = function () {
     }
     for(var i = 0, players_l = players.length; i < players_l; ++i) {
         var car = world.cars[i];
-        var car_model = _get_car(car.type);
+        var car_model = ModelManager.get_car(car.type);
         //前进方向分速度
         var vf = car.vf = -Math.sin(car.d) * car.xv + Math.cos(car.d) * car.zv;
         var vfx = -Math.sin(car.d) * vf;
         var vfz = Math.cos(car.d) * vf;
         //推力
+        //if(players[i].hp <= 0) {
+        //    players[i].key.data = "0";
+        //}
         var fp = 0;
         if(players[i].key.onlyup) {
             if(vf >= map_model.min_vf) {
@@ -233,9 +191,6 @@ Game.prototype.run = function () {
         //漂移方向分速度
         var vtx = car.xv - vfx;
         var vtz = car.zv - vfz;
-        if(players[i].hp <= 0) {
-            players[i].key.data = "0";
-        }
         
         //阻力
         var gravity = car_model.m * 0.98;
@@ -265,8 +220,10 @@ Game.prototype.run = function () {
                 }
             }
         }
-        var vt = round(Math.sqrt(vtx * vtx + vtz * vtz));
+        var vt = Utils.round(Math.sqrt(vtx * vtx + vtz * vtz));
         if(vt > 0) {
+            events.push([EVENT_DRIFT, i, vt]);
+
             var frict = map_model.kd * car_model.kt * gravity;
             var frictx = vtx * frict / vt;
             fricx += frictx;
@@ -305,14 +262,14 @@ Game.prototype.run = function () {
 
     for(var i = 0, players_l = players.length; i < players_l; ++i) {
         var car = world.cars[i];
-        var car_model = _get_car(car.type);
+        var car_model = ModelManager.get_car(car.type);
         var vf = car.vf;
         //冲量补偿
         //车-车碰撞
         for(var j = i + 1; j < players_l; ++j) {
             var car2 = world.cars[j];
-            if(hit(car, car2, 245)) {
-                var car2_model = _get_car(car2.type);
+            if(Utils.hit(car, car2, 245)) {
+                var car2_model = ModelManager.get_car(car2.type);
                 var mz = car2.z - car.z;
                 var mx = car2.x - car.x;
                 var mc = Math.sqrt(mz * mz + mx * mx);
@@ -332,10 +289,14 @@ Game.prototype.run = function () {
                 car.zv += k2 * (v1 - v10);
                 car2.xv += k1 * (v2 - v20);
                 car2.zv += k2 * (v2 - v20);
+
+                events.push([EVENT_CAR_HIT_CAR, i, j]);
             }
         }
         //车-墙碰撞
-        map_model.adjust(car, 0, true);
+        if(map_model.adjust(car, 0, true)) {
+            events.push([EVENT_CAR_HIT_WALL, i]);
+        }
         //转向
         if(players[i].key.onlyleft && players[i].key.onlyup || players[i].key.onlyright && players[i].key.onlydown) {
             car.d = (car.d + car_model.dv) % (Math.PI * 2);
@@ -399,7 +360,7 @@ Game.prototype.run = function () {
     //释放道具
     for(var i = 0; i < players.length; i++) {
         if(players[i].cd == 0 && players[i].hp > 0) {
-            var car_model = _get_car(world.cars[i].type);
+            var car_model = ModelManager.get_car(world.cars[i].type);
             for(var j = 0; j < 4; j++) {
                 if(players[i].key.item(j)) {
                     switch(players[i].items[j]) {
@@ -418,6 +379,8 @@ Game.prototype.run = function () {
                                 player: i,
                                 type: world.cars[i].type
                             });
+
+                            events.push([EVENT_LAUNCH_MISSILE, i]);
                             break;
                         case 2:
                             //炸弹
@@ -432,6 +395,8 @@ Game.prototype.run = function () {
                                 cd: TRAP_LAST_TIME,
                                 type: world.cars[i].type
                             });
+
+                            events.push([EVENT_LAY_TRAP, i]);
                             break;
                     }
                     break;
@@ -444,6 +409,8 @@ Game.prototype.run = function () {
     //导弹-墙
     for(var j = 0; j < world.missiles.length; j++) {
         if(map_model.adjust(world.missiles[j], -150)) {
+            events.push([EVENT_MISSILE_HIT_WALL, Math.round(world.missiles[j].x), Math.round(world.missiles[j].z)]);
+
             world.missiles.splice(j, 1);
             --j;
         }
@@ -451,7 +418,7 @@ Game.prototype.run = function () {
     for(var i = 0, players_l = players.length; i < players_l; ++i) {
         //车-盒子
         for(var j = 0; j < world.boxes.length; j++) {
-            if(world.boxes[j].cd == 0 && hit(world.cars[i], world.boxes[j], 90) && players[i].hp > 0) {
+            if(world.boxes[j].cd == 0 && Utils.hit(world.cars[i], world.boxes[j], 90) && players[i].hp > 0) {
                 var k = 0;
                 for(k = 0; k < 4; k++)
                     if(players[i].items[k] == 0)
@@ -466,25 +433,31 @@ Game.prototype.run = function () {
                     players[i].items[k] = _key;
                     //players[i].items[k] = Math.floor(Math.random() * 2 + 1);
                     //players[i].items[k] = 1;
+
+                    events.push([EVENT_GET_ITEM, i]);
                 }
             }
         }
-        if(players[i].hp > 0) {
-            //车-炸弹
-            for(var j = 0; j < world.traps.length; j++) {
-                if(world.traps[j].player != i && hit(world.cars[i], world.traps[j], 110)) {
-                    players[i].hp--;
-                    world.cars[i].xv /= 2;
-                    world.cars[i].zv /= 2;
-                    players[world.traps[j].player].items[world.traps[j].index] = 0;
-                    world.traps.splice(j, 1);
-                    j--;
+        //车-炸弹
+        for(var j = 0; j < world.traps.length; ++j) {
+            if(players[world.traps[j].player].team != players[i].team && Utils.hit(world.cars[i], world.traps[j], 110)) {
+                events.push([EVENT_HIT_TRAP, i, world.traps[j].player]);
+
+                if(players[i].hp > 0) {
+                    --players[i].hp;
                 }
+                world.cars[i].xv /= 4;
+                world.cars[i].zv /= 4;
+                players[world.traps[j].player].items[world.traps[j].index] = 0;
+                world.traps.splice(j, 1);
+                --j;
             }
         }
         //车-导弹
-        for(var j = 0; j < world.missiles.length; j++) {
-            if(world.missiles[j].player != i && hit(world.cars[i], world.missiles[j], 100)) {
+        for(var j = 0; j < world.missiles.length; ++j) {
+            if(world.missiles[j].player != i && Utils.hit(world.cars[i], world.missiles[j], 100)) {
+                events.push([EVENT_HIT_MISSILE, i, world.missiles[j].player]);
+
                 if(players[i].hp > 0) {
                     players[i].hp--;
                 }
@@ -497,42 +470,47 @@ Game.prototype.run = function () {
     }
     
     //游戏结束判断
+    var alive_teams = {};
     var alivecount = 0;
     for(var i = 0; i < players.length; ++i) {
-        if(players[i].hp > 0)
+        if(players[i].hp > 0 && !alive_teams[players[i].team]) {
             ++alivecount;
+            alive_teams[players[i].team] = true;
+        }
     }
     if(alivecount <= 1 || current_time - this.start_time >= GAME_TIME_LIMIT) {
         this.ended = 1;
-        events[EVENT_GAME_END] = true;
+        events.push(EVENT_GAME_END);
         if(alivecount < 1) {
-            events[EVENT_DRAW] = true;
+            events.push(EVENT_DRAW);
         }
     }
     
     //生成msg
     this.msg = [];
-    var ev = [];
-    for(var evt in events) {
-        ev.push(evt);
+    this.msg.push(events);
+    //this.msg.push(this.room.map_type);
+    var msg_boxes_status = [];
+    var _cur_status = 0;
+    for(var i = 0, l = world.boxes.length; i < l; ++i) {
+        _cur_status = (_cur_status << 1) | (world.boxes[i].cd == 0 ? 1 : 0);
+        if((i + 1) % 30 == 0 || i == l - 1) {
+            msg_boxes_status.push(_cur_status.toString(36));
+            _cur_status = 0;
+        }
     }
-    this.msg.push(ev);
-    this.msg.push(this.map_type);
-    var msg_boxes_status = 0;
-    for(var i = 0; i < world.boxes.length; i++) {
-        msg_boxes_status = (msg_boxes_status << 1) | (world.boxes[i].cd == 0 ? 1 : 0);
-    }
-    this.msg.push(msg_boxes_status.toString(36));
+    this.msg.push(msg_boxes_status.join(''));
     var msg_hp = [];
     var msg_cars = [];
     for(var i = 0; i < players.length; i++) {
         msg_hp.push(players[i].hp);
         msg_cars.push([
-            Math.floor(world.cars[i].x),
-            Math.floor(world.cars[i].z),
-            Math.floor(world.cars[i].d * ANGLE_RATIO),
+            Math.round(world.cars[i].x),
+            Math.round(world.cars[i].z),
+            Math.round(world.cars[i].d * ANGLE_RATIO),
             world.cars[i].da,
-            world.cars[i].type
+            world.cars[i].type,
+            players[i].team
         ]);
     }
     this.msg.push(msg_hp);
@@ -540,9 +518,9 @@ Game.prototype.run = function () {
     var msg_missiles = [];
     for(var i = 0; i < world.missiles.length; i++) {
         msg_missiles.push([
-            Math.floor(world.missiles[i].x),
-            Math.floor(world.missiles[i].z),
-            Math.floor(world.missiles[i].d * ANGLE_RATIO),
+            Math.round(world.missiles[i].x),
+            Math.round(world.missiles[i].z),
+            Math.round(world.missiles[i].d * ANGLE_RATIO),
             world.missiles[i].player,
             world.missiles[i].type
         ]);
@@ -551,9 +529,9 @@ Game.prototype.run = function () {
     var msg_traps = [];
     for(var i = 0; i < world.traps.length; i++) {
         msg_traps.push([
-            Math.floor(world.traps[i].x),
-            Math.floor(world.traps[i].z),
-            Math.floor(world.traps[i].d * ANGLE_RATIO),
+            Math.round(world.traps[i].x),
+            Math.round(world.traps[i].z),
+            Math.round(world.traps[i].d * ANGLE_RATIO),
             world.traps[i].player,
             world.traps[i].type
         ]);
@@ -566,14 +544,14 @@ Game.prototype.run = function () {
 
 Game.prototype.gen_msg = function (index) {
     var res = this.msg;
-    res.splice(7, 4);
+    res.splice(6, 4);
     res.push(index);
     
     //速度
-    res.push(Math.floor(this.world.cars[index].vf));
+    res.push(Math.round(this.world.cars[index].vf));
     
     res.push(this.players[index].items);
-    res.push(Math.floor(this.players[index].cd));
+    res.push(Math.round(this.players[index].cd));
     return res;
 }
 

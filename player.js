@@ -7,12 +7,13 @@ function Player(socket, data)
     var newplayer = {
         socket: socket,
         id: player_next_id++,
-        car_type: 0,
+        car_type: '0',
         name: data.name,
         ip: socket.remoteAddress,
         status: '未准备',
         isAI: false,
-        room: null
+        room: null,
+        team: null
     };
     newplayer.__proto__ = Player.prototype;
     return newplayer;
@@ -24,7 +25,8 @@ Player.prototype.gen_msg = function () {
         name: this.name,
         ip: this.ip,
         status: this.status,
-        ai: this.isAI
+        ai: this.isAI,
+        team: this.team
     };
 }
 Player.prototype.quit = function () {

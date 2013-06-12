@@ -140,14 +140,18 @@ window.jschariot_graphics_webgl = {
     },
     utils: {
         da_yaw: function (obj, da, degree) {
-            degree = degree || 4;
+            degree = (degree || 4) * Math.PI / 180;
             if(da < 0) {
                 degree = -degree;
             }
             if(da != 0) {
-                var adjust = new THREE.Matrix4();
-                adjust.makeRotationY(degree * Math.PI / 180);
-                obj.applyMatrix(adjust);
+                if(obj instanceof THREE.Object3D) {
+                    obj.rotation.y += degree;
+                } else if(obj instanceof THREE.Geometry) {
+                    var adjust = new THREE.Matrix4();
+                    adjust.makeRotationY(degree);
+                    obj.applyMatrix(adjust);
+                }
             }
         }
     },
@@ -237,6 +241,9 @@ window.jschariot_graphics_webgl = {
             light.shadowMapHeight = 512;
 
             scene.add( light );*/
+
+            var rotate_d_date = new Date();
+            var rotate_d = (rotate_d_date.getSeconds() % 4 + rotate_d_date.getMilliseconds() / 1000) * 90;
             var scene_objs = map.gen_scene();
             for(var k in scene_objs) {
                 _scene.add(scene_objs[k]);
@@ -244,12 +251,10 @@ window.jschariot_graphics_webgl = {
             $.each(data[INDEX_CARS], function (i) {
                 var car_data = this;
                 var car = _get_car(car_data[INDEX_TYPE]);
+                var res_m = new THREE.Object3D();
+                res_m.add(car.gen_car(this));
                 if(car != null) {
-                    var res_m;
                     if(i != self_index) {
-                        res_m = new THREE.Object3D();
-                        res_m.add(car.gen_car(this));
-
                         var hp = data[INDEX_HP][i];
                         var res_hp = new THREE.Object3D();
                         for(var i = 0; i < 3; ++i) {
@@ -270,14 +275,30 @@ window.jschariot_graphics_webgl = {
                         res_hp.position.z = -car_data[INDEX_Z];
 
                         res_m.add(res_hp);
-                    } else {
-                        res_m = car.gen_car(car_data);
+                    }
+                    if(car_data[INDEX_CAR_STATUS] == CAR_STATUS_HOODS && car_data[INDEX_TEAM] == self_team) {
+                        var geometry_hoods = new THREE.SphereGeometry(160);
+                        var material_hoods = new THREE.MeshPhongMaterial({
+                            color: 0xaaaaff, transparent: true, opacity: 0.3
+                        });
+
+                        var res_hoods = new THREE.Mesh(geometry_hoods, material_hoods);
+                        res_hoods.position.x = car_data[INDEX_X];
+                        res_hoods.position.y = 30;
+                        res_hoods.position.z = -car_data[INDEX_Z];
+
+                        res_m.add(res_hoods);
                     }
                     _scene.add(res_m);
+
+                    if(!_not_loading) {
+                        var _data = {INDEX_X: 0, INDEX_Z: 0, INDEX_D: 0};
+                        _scene.add(car.gen_trap(_data, true, rotate_d));
+                        _scene.add(car.gen_trap(_data, false, rotate_d));
+                        _scene.add(car.gen_missile(_data, rotate_d));
+                    }
                 }
             });
-            var rotate_d_date = new Date();
-            var rotate_d = (rotate_d_date.getSeconds() % 4 + rotate_d_date.getMilliseconds() / 1000) * 90;
             $.each(_boxes_data, function (i, box_data) {
                 if(box_data.v) {
                     _scene.add(map.gen_box(box_data, rotate_d));

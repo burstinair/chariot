@@ -221,13 +221,17 @@ a
 }
 .gamecontainer #player_status .items .item
 {
-	width : 38px;
-	height : 38px;
+	width : 40px;
+	height : 40px;
 	border : solid 1px #888;
 	background : #fcfcfc;
-	margin-right : 10px;
+	margin-right : 7px;
 	float : left;
 	border-radius : 4px;
+    overflow : hidden;
+}
+.gamecontainer #player_status .items .item img
+{
 }
 .gamecontainer #player_status .items .last
 {

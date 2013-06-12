@@ -11,14 +11,20 @@ var GAME_END = 'ge';
 var GAME_REFRESH = 'gr';
 
 var GAME_TIME_LIMIT = 300000;
-var PLAYER_ITEM_CD = 5000;
+var PLAYER_ITEM_CD = 4000;
 var BOX_CD = 10000;
-var TRAP_LAST_TIME = 20000;
+var TRAP_LAST_TIME = 15000;
+var HOODS_LAST_TIME = 10000;
 
 var ITEM_EMPTY = 0;
 var ITEM_MISSILE = 1;
 var ITEM_TRAP = 2;
-var ITEM_TRAP_HOLD = 101;
+var ITEM_HOODS = 3;
+var ITEM_TRAP_HOLD = 201;
+var ITEM_HOODS_HOLD = 301;
+
+var CAR_STATUS_NORMAL = 0;
+var CAR_STATUS_HOODS = 1;
 
 var EVENT_GAME_END = "ge";
 var EVENT_DRAW = "gd";
@@ -31,7 +37,8 @@ var EVENT_GET_ITEM = "gi";
 var EVENT_LAUNCH_MISSILE = "lm";
 var EVENT_LAY_TRAP = "lt";
 var EVENT_OPEN_HOODS = "oh";
-var EVENT_HIT_HOODS = "hh";
+var EVENT_TRAP_HIT_HOODS = "thh";
+var EVENT_MISSILE_HIT_HOODS = "mhh";
 var EVENT_DRIFT = "dft";
 
 function Game (room) {
@@ -53,6 +60,8 @@ function Game (room) {
             xv: 0,
             zv: 0,
             vf: 0,
+            hoods_cd: 0,
+            hoods_index: -1,
             type: room.players[i].car_type
         };
     }
@@ -342,6 +351,13 @@ Game.prototype.run = function () {
         players[i].cd -= time * 100;
         if(players[i].cd < 0)
             players[i].cd = 0;
+        if(world.cars[i].hoods_cd > 0) {
+            world.cars[i].hoods_cd -= time * 100;
+            if(world.cars[i].hoods_cd <= 0) {
+                world.cars[i].hoods_cd = 0;
+                players[i].items[world.cars[i].hoods_index] = ITEM_EMPTY;
+            }
+        }
     }
     for(var i = 0; i < world.boxes.length; i++) {
         world.boxes[i].cd -= time * 100;
@@ -351,7 +367,7 @@ Game.prototype.run = function () {
     for(var i = 0; i < world.traps.length; i++) {
         world.traps[i].cd -= time * 100;
         if(world.traps[i].cd < 0) {
-            players[world.traps[i].player].items[world.traps[i].index] = 0;
+            players[world.traps[i].player].items[world.traps[i].index] = ITEM_EMPTY;
             world.traps.splice(i, 1);
             i--;
         }
@@ -359,7 +375,7 @@ Game.prototype.run = function () {
     
     //释放道具
     for(var i = 0; i < players.length; i++) {
-        if(players[i].cd == 0 && players[i].hp > 0) {
+        if(players[i].cd == 0 && players[i].hp > 0 && world.cars[i].hoods_cd == 0) {
             var car_model = ModelManager.get_car(world.cars[i].type);
             for(var j = 0; j < 4; j++) {
                 if(players[i].key.item(j)) {
@@ -398,6 +414,16 @@ Game.prototype.run = function () {
 
                             events.push([EVENT_LAY_TRAP, i]);
                             break;
+                        case 3:
+                            //防护罩
+                            //if(world.cars[i].hoods_cd == 0) {
+                                players[i].items[j] = ITEM_HOODS_HOLD;
+                                players[i].cd = PLAYER_ITEM_CD;
+                                world.cars[i].hoods_cd = HOODS_LAST_TIME;
+                                world.cars[i].hoods_index = j;
+
+                                events.push([EVENT_OPEN_HOODS, i]);
+                            //}
                     }
                     break;
                 }
@@ -425,11 +451,14 @@ Game.prototype.run = function () {
                         break;
                 if(k < 4) {
                     world.boxes[j].cd = BOX_CD;
-                    var _key = Math.floor(Math.random() * 3);
-                    if(_key < 2)
+                    var _key = Math.floor(Math.random() * 6);
+                    if(_key < 3) {
                         _key = 1;
-                    else
+                    } else if(_key < 5) {
                         _key = 2;
+                    } else {
+                        _key = 3;
+                    }
                     players[i].items[k] = _key;
                     //players[i].items[k] = Math.floor(Math.random() * 2 + 1);
                     //players[i].items[k] = 1;
@@ -441,13 +470,21 @@ Game.prototype.run = function () {
         //车-炸弹
         for(var j = 0; j < world.traps.length; ++j) {
             if(players[world.traps[j].player].team != players[i].team && Utils.hit(world.cars[i], world.traps[j], 110)) {
-                events.push([EVENT_HIT_TRAP, i, world.traps[j].player]);
 
-                if(players[i].hp > 0) {
-                    --players[i].hp;
+                if(world.cars[i].hoods_cd > 0) {
+                    events.push([EVENT_TRAP_HIT_HOODS, i, world.traps[j].player]);
+
+                    world.cars[i].hoods_cd = 0;
+                    players[i].items[world.cars[i].hoods_index] = ITEM_EMPTY;
+                } else {
+                    events.push([EVENT_HIT_TRAP, i, world.traps[j].player]);
+
+                    if(players[i].hp > 0) {
+                        --players[i].hp;
+                        world.cars[i].xv /= 4;
+                        world.cars[i].zv /= 4;
+                    }
                 }
-                world.cars[i].xv /= 4;
-                world.cars[i].zv /= 4;
                 players[world.traps[j].player].items[world.traps[j].index] = 0;
                 world.traps.splice(j, 1);
                 --j;
@@ -456,13 +493,21 @@ Game.prototype.run = function () {
         //车-导弹
         for(var j = 0; j < world.missiles.length; ++j) {
             if(world.missiles[j].player != i && Utils.hit(world.cars[i], world.missiles[j], 100)) {
-                events.push([EVENT_HIT_MISSILE, i, world.missiles[j].player]);
+                if(world.cars[i].hoods_cd > 0) {
+                    events.push([EVENT_MISSILE_HIT_HOODS, i, world.missiles[j].player]);
 
-                if(players[i].hp > 0) {
-                    players[i].hp--;
+                    world.cars[i].hoods_cd = 0;
+                    players[i].items[world.cars[i].hoods_index] = ITEM_EMPTY;
+                } else {
+                    events.push([EVENT_HIT_MISSILE, i, world.missiles[j].player]);
+
+                    if(players[i].hp > 0) {
+                        players[i].hp--;
+                    }
+                    world.cars[i].xv /= 4;
+                    world.cars[i].zv /= 4;
                 }
-                world.cars[i].xv /= 2;
-                world.cars[i].zv /= 2;
+
                 world.missiles.splice(j, 1);
                 j--;
             }
@@ -510,7 +555,8 @@ Game.prototype.run = function () {
             Math.round(world.cars[i].d * ANGLE_RATIO),
             world.cars[i].da,
             world.cars[i].type,
-            players[i].team
+            players[i].team,
+            world.cars[i].hoods_cd == 0 ? CAR_STATUS_NORMAL : CAR_STATUS_HOODS
         ]);
     }
     this.msg.push(msg_hp);

@@ -1,6 +1,6 @@
 (function ($, jcg) {
 
-var _item_id_list = [0, 1, 2, 101];
+var _item_id_list = [0, 1, 2, 3, 201, 301];
 var _id_item_map = {};
 
 var _items_cache = [];

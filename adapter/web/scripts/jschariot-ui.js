@@ -240,6 +240,21 @@ $(".room .quitbutton").click(function () {
         $(".hall").show();
     });
 });
+var gen_car_select = function (cur_type, car_select) {
+    var res = (car_select || $("<select class='car_select'></select>")).empty();
+    $.each(room.car_type_list, function() {
+        if(this != null) {
+            var _citem = $("<option></option>");
+            _citem.text(this.name);
+            if(this.id == cur_type) {
+                _citem.attr('selected', 'selected');
+            }
+            _citem.val(this.id);
+            res.append(_citem);
+        }
+    });
+    return res;
+}
 jcn.socket.on("refresh_room", function(data) {
     if(data && room && data.id == room.id) {
         room = data;
@@ -256,40 +271,38 @@ jcn.socket.on("refresh_room", function(data) {
         $(".map_select :selected").removeAttr("selected");
         $(".map_select option[value=" + room.map_type + "]").attr("selected", "selected");
 
+        gen_car_select(get_self().car_type, $(".actions .car_select"));
+
         var car_types = {};
-        $(".car_select option").remove();
         $.each(room.car_type_list, function() {
             if(this != null) {
-                var _citem = $("<option></option>");
-                _citem.text(this.name);
-                _citem.val(this.id);
                 car_types[this.id] = this.name;
-                $(".car_select").append(_citem);
             }
         });
-        $(".car_select :selected").removeAttr("selected");
-        $(".car_select option[value=" + get_self().car_type + "]").attr("selected", "selected");
 
         $(".playerlist").empty();
         $.each(room.players, function(index) {
             if(this != null) {
                 var _citem = $("<div class='playerlist_item'></div>");
                 //var car_type_panel = $("<img class='playerlist_car_type' src='images/cars/" + this.car_type + ".jpg' alt='" + car_types[this.car_type] + "'></img>")
-                var car_type_panel = $("<img class='playerlist_car_type' alt='" + car_types[this.car_type] + "'></img>")
+                $("<img class='playerlist_car_type' alt='" + car_types[this.car_type] + "'></img>")
                     .appendTo(_citem);
                 var info_panel = $("<div class='playerlist_info'></div>").appendTo(_citem);
-                var _name = $("<div class='playerlist_name'></div>").text(this.name).appendTo(info_panel);
-                var _ip = $("<div class='playerlist_ip'></div>").text(this.ip.address + ':' + this.ip.port).appendTo(info_panel);
+                $("<div class='playerlist_name'></div>").text(this.name).appendTo(info_panel);
+                $("<div class='playerlist_ip'></div>").text(this.ip.address + ':' + this.ip.port).appendTo(info_panel);
                 if(this.ai) {
-                    var _team = gen_team_selector().addClass('team_selector_single_line').change(function (event, team) {
+                    gen_team_selector().addClass('team_selector_single_line').change(function (event, team) {
                         jcn.request('', 'set_ai_team', {index: index, team: team}, $.noop);
                     }).val(this.team).appendTo(info_panel);
-                    var _car_type = $("<div class='playerlist_car_type'></div>").text(car_types[this.car_type]).appendTo(info_panel);
+                    gen_car_select(this.car_type).change(function () {
+                        var cur_type = $(this).val();
+                        jcn.request('', 'set_ai_car', {index: index, type: cur_type}, $.noop);
+                    }).appendTo(info_panel);
                 } else {
-                    var _team = gen_team_selector(false).addClass('team_selector_single_line').val(this.team).appendTo(info_panel);
-                    var _car_type = $("<div class='playerlist_car_type'></div>").text(car_types[this.car_type]).appendTo(info_panel);
+                    gen_team_selector(false).addClass('team_selector_single_line').val(this.team).appendTo(info_panel);
+                    $("<div class='playerlist_car_type'></div>").text(car_types[this.car_type]).appendTo(info_panel);
                 }
-                var _status = $("<div class='playerlist_status'></div>").text(this.status).appendTo(info_panel);
+                $("<div class='playerlist_status'></div>").text(this.status).appendTo(info_panel);
                 $(".playerlist").append(_citem);
             }
         });

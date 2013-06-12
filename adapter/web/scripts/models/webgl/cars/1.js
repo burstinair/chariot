@@ -88,16 +88,15 @@ _reset($.lock(true, function () {
     jcg_webgl.set_car_model("1", {
         reset: _reset,
         gen_car: function (data) {
-            var geometry = _car_cache;
             var da = data[INDEX_DA];
-            var res_m = new THREE.Mesh(geometry, _car_material);
+            var res_m = new THREE.Mesh(_car_cache, _car_material);
             res_m.rotation.y = data[INDEX_D] * Math.PI / 180;
-            res_m.position.y = 0;
-            res_m.castShadow = true;
-            res_m.receiveShadow = true;
             jcg_webgl.utils.da_yaw(res_m, da, 5);
             res_m.position.x = data[INDEX_X];
+            res_m.position.y = 0;
             res_m.position.z = -data[INDEX_Z];
+            res_m.castShadow = true;
+            res_m.receiveShadow = true;
             return res_m;
         },
         gen_trap: function (data, not_own) {

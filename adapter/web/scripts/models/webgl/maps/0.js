@@ -1,16 +1,5 @@
 ﻿(function ($, THREE, jcg_webgl, jcg) {
 
-var _item_id_list = [0, 1, 2, 101];
-var _id_item_map = {};
-
-var _items_cache = [];
-for(var i = 0; i < _item_id_list.length; ++i) {
-    var _img = new Image();
-    _img.src = 'images/styles/0/items/' + _item_id_list[i] + '.png';
-    _id_item_map[_item_id_list[i]] = i;
-    _items_cache.push(_img);
-}
-
 var _scene_cube_cache = null,
     _scene_cube_texture = null,
     _scene_cube_material = null,
@@ -19,7 +8,11 @@ var _scene_cube_cache = null,
     _wall_cache = null,
     _wall_material = null,
     _box_cache = null,
-    _box_material = null;
+    _box_material = null,
+
+    _boxes_cache = null,
+    _hemi_light = null,
+    _god_light = null;
 
 var init_wall = function (lock) {
     _wall_cache = new THREE.Geometry();
@@ -150,73 +143,83 @@ _reset($.lock(true, function () {
         gen_floor: function () {
             var res_m = new THREE.Mesh(_floor_cache, _floor_material);
             res_m.rotation.x = - Math.PI / 2;
-            res_m.scale.set( 83, 83, 83 );
+            res_m.scale.set(83, 83, 83);
             res_m.castShadow = false;
             res_m.receiveShadow = true;
             return res_m;
         },
         gen_fog: function () {
-            return new THREE.Fog( 0xf2f7ff, 1, 15000);
+            return new THREE.Fog( 0xffffff, 1, 15000);
             //res.push(new THREE.FogExp2(0x444444, 100000));
         },
-        gen_lights: function (data, options) {
-            var res = [];
-
-            //var hemiLight = new THREE.HemisphereLight(0xddeeff, 0xcccccc, 1.25);
-            var hemiLight = new THREE.HemisphereLight(0x444444, 0xffffff, 1);
-            //hemiLight.color.setHSL( 0.6, 1, 0.75 );
-            //hemiLight.groundColor.setHSL( 0.1, 0.8, 0.7 );
-            hemiLight.position.y = 500;
-            res.push(hemiLight);
+        add_lights: function (data, options) {
+            //_hemi_light = new THREE.HemisphereLight(0xddeeff, 0xcccccc, 1.25);
+            _hemi_light = new THREE.HemisphereLight(0x999999, 0xffffff, 1);
+            //_hemi_light.color.setHSL( 0.6, 1, 0.75 );
+            //_hemi_light.groundColor.setHSL( 0.1, 0.8, 0.7 );
+            _hemi_light.position.y = 500;
+            jcg_webgl.utils.scene_add(_hemi_light);
 
             //for()
 
-            var godlight = new THREE.DirectionalLight(0xffffff, 1, 0, Math.PI, 10);
-            godlight.position.set(0, 10000, 1000);
-            godlight.target.position.set(0, 0, 0);
+            //_god_light = new THREE.DirectionalLight(0xffffff, 1, 0, Math.PI, 10);
+            _god_light = new THREE.DirectionalLight(0xffffff, 1);
+            _god_light.position.set(0, 500, 0);
 
-            godlight.shadowCameraLeft = -10000;
-            godlight.shadowCameraRight = 10000;
-            godlight.shadowCameraTop = 10000;
-            godlight.shadowCameraBottom = -10000;
+            _god_light.shadowCameraLeft = -10000;
+            _god_light.shadowCameraRight = 10000;
+            _god_light.shadowCameraTop = 10000;
+            _god_light.shadowCameraBottom = -10000;
 
-            //var godlight = new THREE.SpotLight(0xffffff, 1);
-            //godlight.position.set(1000, 2000, 1500);
-            //godlight.angle = Math.PI / 2;
-            godlight.distance = 100000;
+            //_god_light = new THREE.SpotLight(0xffffff, 1);
+            //_god_light.position.set(0, 10000, 0);
+            //_god_light.angle = Math.PI / 2;
+            //_god_light.distance = 100000;
 
-            //godlight.rotation.x = -Math.PI / 2 * 3;
-            godlight.castShadow = options.shadow != 0;
-            //godlight.onlyShadow = true;
-            godlight.shadowMapWidth = options.shadow;
-            godlight.shadowMapHeight = options.shadow;
-            godlight.shadowMapDarkness = 0.95;
-            godlight.shadowBias = 0.0001;
-            godlight.shadowCameraNear = 700;
-            godlight.shadowCameraFar = 20000;
-            godlight.shadowCameraFov = 50;
-            godlight.shadowCameraVisible = true;
+            _god_light.target.position.set(0, 0, 0);
+            //_god_light.castShadow = options.quality != 0;
+            _god_light.castShadow = true;
+            //_god_light.onlyShadow = true;
+            _god_light.shadowMapWidth = _god_light.shadowMapHeight = options.quality * 128;
+            _god_light.shadowMapDarkness = 1;
+            _god_light.shadowBias = 0.0001;
+            _god_light.shadowCameraNear = 0;
+            _god_light.shadowCameraFar = 1000;
+            _god_light.shadowCameraFov = 50;
+            //_god_light.shadowCameraVisible = true;
 
-            res.push(godlight);
-
-            return res;
+            jcg_webgl.utils.scene_add(_god_light);
         },
-        gen_scene: function () {
-            var res = [];
-            res.push(this.gen_wall());
-            res.push(this.gen_scene_cube());
-            res.push(this.gen_floor());
-            return res;
+        update_lights: function (data, options) {
+            //if(_god_light.shadowMapWidth != new_quality) {
+                //$.log(options.quality);
+                //_god_light.castShadow = options.quality != 0;
+                _god_light.shadowMapWidth = options.quality * 128;
+                _god_light.shadowMapHeight = options.quality * 128;
+                //_god_light.needsUpdate = true;
+            //}
         },
-        gen_box: function (data, d) {
-            var res_m = new THREE.Mesh(_box_cache, _box_material);
-            res_m.rotation.y = (d || 50) * Math.PI / 180;
-            res_m.position.x = data.x;
-            res_m.position.y = 100;
-            res_m.position.z = -data.z;
-            res_m.castShadow = true;
-            res_m.receiveShadow = true;
-            return res_m;
+        add_scene: function () {
+            jcg_webgl.utils.scene_add(this.gen_wall());
+            jcg_webgl.utils.scene_add(this.gen_scene_cube());
+            jcg_webgl.utils.scene_add(this.gen_floor());
+        },
+        add_boxes: function (boxes_data) {
+            _boxes_cache = [];
+            $.each(boxes_data, function (i, box_data) {
+                var mesh = new THREE.Mesh(_box_cache, _box_material);
+                mesh.position.set(box_data.x, 100, -box_data.z);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                _boxes_cache.push(mesh);
+                jcg_webgl.utils.scene_add(mesh);
+            });
+        },
+        update_boxes: function(boxes_data, rotate_d) {
+            $.each(boxes_data, function (i) {
+                _boxes_cache[i].rotation.y = rotate_d * Math.PI / 180;
+                _boxes_cache[i].visible = !!(this.v);
+            });
         },
         get_scene_cube_texture: function () {
             return _scene_cube_texture;

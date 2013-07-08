@@ -154,9 +154,8 @@ var _reset = function (lock) {
 _reset($.lock(true, function () {
     jcg_webgl.set_car_model("0", {
         reset: _reset,
-        gen_car: function (data) {
+        gen_car: function (da) {
             var geometry = null;
-            var da = data[INDEX_DA];
             if(da == 1) {
                 geometry = _turn_right_car;
             } else if(da == -1) {
@@ -164,16 +163,12 @@ _reset($.lock(true, function () {
             } else {
                 geometry = _normal_car;
             }
-            var res_m = new THREE.Mesh(geometry, _material);
-            res_m.rotation.y = data[INDEX_D] * Math.PI / 180;
-            res_m.position.y = 0;
-            res_m.castShadow = true;
-            res_m.receiveShadow = true;
-            res_m.position.x = data[INDEX_X];
-            res_m.position.z = -data[INDEX_Z];
-            return res_m;
+            var res =  new THREE.Mesh(geometry, _material);
+            res.castShadow = true;
+            res.receiveShadow = true;
+            return res;
         },
-        gen_trap: function (data, not_own) {
+        gen_trap: function (not_own) {
             var geometry = _trap_cache_self;
             var material = _trap_material_self;
             if(not_own) {
@@ -184,35 +179,34 @@ _reset($.lock(true, function () {
             //var _trap_material = new THREE.MeshLambertMaterial({color: color});
             //var _trap_material = new THREE.MeshPhongMaterial({color: color, specular: 0xffffff, shininess: 1000});
             var res_m = new THREE.Mesh(geometry, material);
-            res_m.rotation.y = data[INDEX_D] * Math.PI / 180;
-            res_m.position.x = data[INDEX_X];
-            res_m.position.y = 23;
-            res_m.position.z = -data[INDEX_Z];
             res_m.castShadow = true;
-            res_m.receiveShadow = true;
+            //res_m.receiveShadow = true;
             return res_m;
         },
-        gen_missile: function (data) {
+        update_trap: function(mesh, data, rotate_d) {
+            mesh.rotation.y = data[INDEX_D] * Math.PI / 180;
+            mesh.position.set(data[INDEX_X], 5, -data[INDEX_Z]);
+        },
+        gen_missile: function () {
             //var res_m = new THREE.Mesh(_missile_cache, new THREE.MeshLambertMaterial({color: 0x444444}));
             //var res_m = new THREE.Mesh(_missile_cache, new THREE.MeshPhongMaterial({color: 0x444444, specular: 0x333333, shininess: 100}));
             //var res_m = new THREE.Mesh(_missile_cache, _material);
             var res_m = new THREE.Mesh(_missile_cache, _missile_material);
-            res_m.rotation.y = data[INDEX_D] * Math.PI / 180;
-            res_m.position.x = data[INDEX_X];
-            res_m.position.y = 100;
-            res_m.position.z = -data[INDEX_Z];
+            res_m.position.set(0, 100, 0);
             //var r = Math.random();
             //var size = 2;
             //if(r > 0.8)
             //    size = 6;
             //else if(r > 0.5)
             //    size = 3;
-            res_m.scale.x = 3;
-            res_m.scale.y = 3;
-            res_m.scale_z = 3;
+            res_m.scale.set(2, 2, 2);
             //res_m.castShadow = true;
             //res_m.receiveShadow = true;
             return res_m;
+        },
+        update_missile: function (mesh, data, rotate_d) {
+            mesh.rotation.y = data[INDEX_D] * Math.PI / 180;
+            mesh.position.set(data[INDEX_X], 100, -data[INDEX_Z]);
         },
         trap_msg: function (self, target) {
             return [target, "踩到了", self, "的便便(⊙o⊙)…"].join(' ');

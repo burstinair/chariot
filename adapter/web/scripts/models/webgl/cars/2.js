@@ -99,7 +99,7 @@ var _gen_car_geometry = function (da) {
 
 var loadMaterial = function () {
     var texture = THREE.ImageUtils.loadTexture("images/textures/cars/2/car.jpg");
-    _material = new THREE.MeshPhongMaterial({color: 0xdddd66, specular: 0x333333, ambient: 0xffaaee, shininess: 100, map: texture});
+    _material = new THREE.MeshPhongMaterial({ambient: 0xffffff, shininess: 100, map: texture});
     //_material = new THREE.MeshLambertMaterial({color: 0xcc6622});
     //_material = new THREE.MeshPhongMaterial({color: 0x886644, specular: 0x333333, shininess: 100});
     //_material = new THREE.MeshPhongMaterial({color: 0xcc6622});
@@ -150,9 +150,8 @@ var _reset = function (lock) {
 _reset($.lock(true, function () {
     jcg_webgl.set_car_model("2", {
         reset: _reset,
-        gen_car: function (data) {
+        gen_car: function (da) {
             var geometry = null;
-            var da = data[INDEX_DA];
             if(da == 1) {
                 geometry = _turn_right_car;
             } else if(da == -1) {
@@ -161,54 +160,49 @@ _reset($.lock(true, function () {
                 geometry = _normal_car;
             }
             var res_m = new THREE.Mesh(geometry, _material);
-            res_m.rotation.y = data[INDEX_D] * Math.PI / 180;
-            res_m.position.y = 0;
             res_m.castShadow = true;
-            res_m.receiveShadow = true;
-            res_m.position.x = data[INDEX_X];
-            res_m.position.z = -data[INDEX_Z];
+            //res_m.receiveShadow = true;
             return res_m;
         },
-        gen_trap: function (data, not_own) {
+        gen_trap: function (not_own) {
             var color = 0x333333;
             if(not_own)
                 color = 0x662222;
             //var _trap_material = new THREE.MeshLambertMaterial({color: color});
             var _trap_material = new THREE.MeshPhongMaterial({color: color, specular: 0xffffff, shininess: 1000});
             var res_m = new THREE.Mesh(_trap_cache, _trap_material);
-            res_m.rotation.y = data[INDEX_D] * Math.PI / 180;
-            res_m.position.x = data[INDEX_X];
-            res_m.position.y = 23;
-            res_m.position.z = -data[INDEX_Z];
             res_m.castShadow = true;
             res_m.receiveShadow = true;
             return res_m;
         },
-        gen_missile: function (data, rotate_d) {
+        update_trap: function(mesh, data, rotate_d) {
+            mesh.rotation.y = data[INDEX_D] * Math.PI / 180;
+            mesh.position.set(data[INDEX_X], 5, -data[INDEX_Z]);
+        },
+        gen_missile: function () {
             //var res_m = new THREE.Mesh(_missile_cache, new THREE.MeshLambertMaterial({color: 0x444444}));
             //var res_m = new THREE.Mesh(_missile_cache, new THREE.MeshPhongMaterial({color: 0x444444, specular: 0x333333, shininess: 100}));
             //var res_m = new THREE.Mesh(_missile_cache, _material);
             //var res_m = new THREE.Mesh(_missile_cache, _missile_material);
             //_missile_material.morphTargets = true;
-            var res_m = new THREE.MorphAnimMesh(_missile_cache, _missile_material);
+            var res_m = new THREE.Mesh(_missile_cache, _missile_material);
             //var res_m = _missile_cache;
-            res_m.rotation.z = rotate_d * Math.PI / 45;
-            res_m.rotation.y = data[INDEX_D] * Math.PI / 180;
-            res_m.position.x = data[INDEX_X];
-            res_m.position.y = 100;
-            res_m.position.z = -data[INDEX_Z];
-            var r = Math.random();
-            /*var size = 2;
+            /*var r = Math.random();
+             var size = 2;
              if(r > 0.8)
-             size = 6;
+                size = 6;
              else if(r > 0.5)
-             size = 3;
+                size = 3;
              res_m.scale.x = size;
              res_m.scale.y = size;
              res_m.scale_z = size;*/
-            //res_m.castShadow = true;
-            //res_m.receiveShadow = true;
+            res_m.castShadow = true;
+            res_m.receiveShadow = true;
             return res_m;
+        },
+        update_missile: function(mesh, data, rotate_d) {
+            mesh.rotation.set(0, data[INDEX_D] * Math.PI / 180, rotate_d * Math.PI / 45);
+            mesh.position.set(data[INDEX_X], 100, -data[INDEX_Z]);
         },
         trap_msg: function (self, target) {
             return [target, "踩到了", self, "的炸弹！"].join(' ');

@@ -51,6 +51,7 @@ function Game (room) {
             items: [0, 0, 0, 0], hp: 3, cd: 0, key: new KeyStatus(), team: room.players[i].team
         });
         _cars[i] = {
+            id: i,
             px: _cars[i].x,
             pz: _cars[i].z,
             x: _cars[i].x,
@@ -93,7 +94,7 @@ Game.prototype.start = function () {
         boxes: [],
         barriers: {polygon: game.map.polygon_barriers, circle: game.map.circle_barriers},
         map_type: game.room.map_type,
-        car_types: [],
+        cars: [],
         start_time: game.start_time
     };
     for(var i = 0; i < game.world.boxes.length; ++i) {
@@ -103,7 +104,11 @@ Game.prototype.start = function () {
         });
     }
     for(var i = 0; i < game.world.cars.length; ++i) {
-        start_msg.car_types.push(game.world.cars[i].type);
+        start_msg.cars.push({
+            type: game.world.cars[i].type,
+            id: game.world.cars[i].id,
+            team: game.players[i].team
+        });
     }
     game.ticker = setInterval(function () {
         game.run();
@@ -126,7 +131,12 @@ Game.prototype.start = function () {
             }, 3000);
         }
     }, 1000 / Config.fps);
-    Network.emit(GAME_START, start_msg);
+    for(var i = 0, l = game.room.players.length; i < l; ++i) {
+        if(!game.room.players[i].isAI) {
+            start_msg.index = i;
+            game.room.players[i].socket.emit(GAME_START, start_msg);
+        }
+    }
 }
 Game.prototype.end = function () {
     clearInterval(this.ticker);
@@ -432,15 +442,6 @@ Game.prototype.run = function () {
     }
     
     //其他碰撞
-    //导弹-墙
-    for(var j = 0; j < world.missiles.length; j++) {
-        if(map_model.adjust(world.missiles[j], -150)) {
-            events.push([EVENT_MISSILE_HIT_WALL, Math.round(world.missiles[j].x), Math.round(world.missiles[j].z)]);
-
-            world.missiles.splice(j, 1);
-            --j;
-        }
-    }
     for(var i = 0, players_l = players.length; i < players_l; ++i) {
         //车-盒子
         for(var j = 0; j < world.boxes.length; j++) {
@@ -513,6 +514,15 @@ Game.prototype.run = function () {
             }
         }
     }
+    //导弹-墙
+    for(var j = 0; j < world.missiles.length; j++) {
+        if(map_model.adjust(world.missiles[j], -150)) {
+            events.push([EVENT_MISSILE_HIT_WALL, Math.round(world.missiles[j].x), Math.round(world.missiles[j].z)]);
+
+            world.missiles.splice(j, 1);
+            --j;
+        }
+    }
     
     //游戏结束判断
     var alive_teams = {};
@@ -554,9 +564,8 @@ Game.prototype.run = function () {
             Math.round(world.cars[i].z),
             Math.round(world.cars[i].d * ANGLE_RATIO),
             world.cars[i].da,
-            world.cars[i].type,
-            players[i].team,
-            world.cars[i].hoods_cd == 0 ? CAR_STATUS_NORMAL : CAR_STATUS_HOODS
+            world.cars[i].hoods_cd == 0 ? CAR_STATUS_NORMAL : CAR_STATUS_HOODS,
+            world.cars[i].id
         ]);
     }
     this.msg.push(msg_hp);
@@ -567,8 +576,7 @@ Game.prototype.run = function () {
             Math.round(world.missiles[i].x),
             Math.round(world.missiles[i].z),
             Math.round(world.missiles[i].d * ANGLE_RATIO),
-            world.missiles[i].player,
-            world.missiles[i].type
+            world.missiles[i].player
         ]);
     }
     this.msg.push(msg_missiles);
@@ -578,8 +586,7 @@ Game.prototype.run = function () {
             Math.round(world.traps[i].x),
             Math.round(world.traps[i].z),
             Math.round(world.traps[i].d * ANGLE_RATIO),
-            world.traps[i].player,
-            world.traps[i].type
+            world.traps[i].player
         ]);
     }
     this.msg.push(msg_traps);

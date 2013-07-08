@@ -32,12 +32,15 @@ window.INDEX_Z = 1;
 window.INDEX_D = 2;
 window.INDEX_DA = 3;
 window.INDEX_OWNER = 3;
-window.INDEX_TYPE = 4;
-window.INDEX_TEAM = 5;
-window.INDEX_CAR_STATUS = 6;
+window.INDEX_CAR_STATUS = 4;
+window.INDEX_CAR_ID = 5;
 
 window.CAR_STATUS_NORMAL = 0;
 window.CAR_STATUS_HOODS = 1;
+
+window.DA_NORMAL = 0;
+window.DA_RIGHT = 1;
+window.DA_LEFT = -1;
 
 window.GAME_START = 'gs';
 window.GAME_END = 'ge';

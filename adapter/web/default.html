@@ -2,9 +2,9 @@
     <head>
         <title>战车</title>
         <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
-        <link rel="stylesheet" type="text/css" href="./styles/jquery-ui-1.8.16.custom.css" />
+        <link rel="stylesheet" type="text/css" href="./styles/jquery-ui-1.10.3.custom.min.css" />
         <link rel="stylesheet" type="text/css" href="./styles/default.css" />
-        <script type="text/javascript" src="./scripts/jquery-1.6.2.min.js"></script>
+        <script type="text/javascript" src="scripts/jquery-2.0.2.min.js"></script>
         <script type="text/javascript" src="./scripts/socket.io.min.js"></script>
         <script type="text/javascript" src="./scripts/plugin.js"></script>
         <script type="text/javascript" src="./scripts/JSON.js"></script>
@@ -53,27 +53,29 @@
             </div>
             <div class="game">
                 <div class="actions">
-                    <span class="roomtitle">xxx的房间</span>
-                    <input type="button" value="退出" class="quitbutton" />
+                    <div class="setting">
+                        <span class="roomtitle">xxx的房间</span>
+                        <input type="button" value="退出" class="quitbutton" />
+                    </div>
+                    <div class="setting">
+                        <input type="checkbox" id="use_webgl" checked="checked" />
+                        <label for="use_webgl" class='checkbox'>使用WebGL</label>
+                    </div>
 
-                    <input type="checkbox" id="use_webgl" checked="checked" />
-                    <label for="use_webgl">使用WebGL</label>
+                    <div class="setting">渲染质量：</div>
+                    <div id="graphics_quality"></div>
 
-                    <span class="setting">渲染质量：</span>
-					<input type="radio" name="shadow" id="shadow0" value="0" />
-					<label for="shadow0">低</label>
-					<input type="radio" name="shadow" id="shadow512" value="512" checked="checked" />
-					<label for="shadow512">中</label>
-					<input type="radio" name="shadow" id="shadow1024" value="1024" />
-					<label for="shadow1024">高</label>
+                    <div class="setting">
+                        <input type="checkbox" id="show_subtitles" checked="checked" />
+                        <label for="show_subtitles" class='checkbox'>弹幕</label>
+                    </div>
 
-                    <span class="setting">
-                        <input type="checkbox" id="show_subtitles" checked="checked" /><label for="show_subtitles">弹幕</label>
-                    </span>
+                    <div class="setting">
+                        <input type="checkbox" id="all_colors" checked="checked" />
+                        <label for="all_colors" class='checkbox'>队伍全色</label>
+                    </div>
 
-                    <span class="setting">
-                        <input type="checkbox" id="all_colors" checked="checked" /><label for="all_colors">队伍全色</label>
-                    </span>
+                    <div class="clear"></div>
                 </div>
                 <div class="gamecontainer">
                     <div id="player_status">
@@ -99,6 +101,7 @@
             </div>
             <div class="footer">
                 by Burst in Oct, 2011 - Jul, 2013.
+                <input id="none" />
             </div>
         </div>
     </body>

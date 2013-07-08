@@ -35,7 +35,7 @@ var gen_team_selector = function (enabled) {
             }, {team: i}));
     }
     $("<div class='clear'></div>").appendTo(selector);
-    res.val = function (team, trigger_event) {
+    res.set_team = function (team, trigger_event) {
         trigger_event = trigger_event || false;
         show(team);
         if(trigger_event) {
@@ -47,8 +47,11 @@ var gen_team_selector = function (enabled) {
 };
 
 $("input:submit, input[type=button]").button()
-    .css("font-size", "12px").css("overflow", "hidden").css("padding", "0px 12px").height(24);
-$("input:text, input:password, textarea").css("border", "1px solid #ccc").css("cursor", "text");
+    .css("font-size", "12px").css("overflow", "hidden").css("padding", "0px 12px").css("margin", "-4px 0 0 0").height(22);
+$("input[type=checkbox]").button()
+    .css("font-size", "12px").css("overflow", "hidden").height(22);
+//$("select").autocomplete();
+$("input:text[id!=none], input:password, textarea").css("border", "1px solid #ccc").css("cursor", "text");
 $("a").css("cursor", "pointer");
 $(".nicknameinput").val($.cookie('nickname') || '');
 var _use_webgl = $.cookie('use_webgl') != 'false';
@@ -74,16 +77,20 @@ var _game_window_container = $("#gamewindow_container");
 var _player_status_panel = $("#player_status");
 var _canvas_game_window, _webgl_game_window;
 
-var _shadow_quality = parseInt($.cookie('shadow_quality') || '512');
-$("input#shadow" + _shadow_quality).attr("checked", "chekced");
-$("input[name=shadow]").change(function () {
-    if($(this).is(":checked")) {
-        _shadow_quality = parseInt($(this).val());
-        $.cookie('shadow_quality', _shadow_quality.toString().toLowerCase(), {expires: 365});
+var _graphics_quality = parseInt($.cookie('graphics_quality') || '4');
+$("#graphics_quality").slider({
+    value: _graphics_quality,
+    max: 128,
+    min: 0,
+    change: function () {
+        _graphics_quality = $(this).slider("value");
+        $.cookie('graphics_quality', _graphics_quality.toString().toLowerCase(), {expires: 365});
+        setTimeout(function () { $("#none").focus(); }, 100);
     }
-})
+});
 
 jcu.all_colors = $.cookie('all_colors') != 'false';
+jcu.last_all_colors = !jcu.all_colors;
 if(jcu.all_colors) {
     $("#all_colors").attr("checked", "checked");
 } else {
@@ -106,10 +113,10 @@ $("#show_subtitles").change(function () {
 });
 
 var jcg = {
-    initialize: function (data) {
+    initialize: function (data, options) {
         data.boxes.reverse();
-        _canvas_game_window = $(jcg_canvas.initialize(data));
-        _webgl_game_window = $(jcg_webgl.initialize(data));
+        _canvas_game_window = $(jcg_canvas.initialize(data, options));
+        _webgl_game_window = $(jcg_webgl.initialize(data, options));
         
         if(_use_webgl) {
             _canvas_game_window.hide();
@@ -230,7 +237,8 @@ $(".room .addaibutton").click(function () {
     jcn.request(null, "addai", null, $.noop);
 });
 $('.room .actions').append('队伍：');
-var team_selector = gen_team_selector().change(function (event, team) {
+var team_selector = gen_team_selector();
+team_selector.change(function (event, team) {
     jcn.request(null, "set_team", team, $.noop);
 }).appendTo($('.room .actions'));
 $(".room .quitbutton").click(function () {
@@ -291,15 +299,15 @@ jcn.socket.on("refresh_room", function(data) {
                 $("<div class='playerlist_name'></div>").text(this.name).appendTo(info_panel);
                 $("<div class='playerlist_ip'></div>").text(this.ip.address + ':' + this.ip.port).appendTo(info_panel);
                 if(this.ai) {
-                    gen_team_selector().addClass('team_selector_single_line').change(function (event, team) {
+                    gen_team_selector().set_team(this.team).addClass('team_selector_single_line').change(function (event, team) {
                         jcn.request('', 'set_ai_team', {index: index, team: team}, $.noop);
-                    }).val(this.team).appendTo(info_panel);
+                    }).appendTo(info_panel);
                     gen_car_select(this.car_type).change(function () {
                         var cur_type = $(this).val();
                         jcn.request('', 'set_ai_car', {index: index, type: cur_type}, $.noop);
                     }).appendTo(info_panel);
                 } else {
-                    gen_team_selector(false).addClass('team_selector_single_line').val(this.team).appendTo(info_panel);
+                    gen_team_selector(false).set_team(this.team).addClass('team_selector_single_line').appendTo(info_panel);
                     $("<div class='playerlist_car_type'></div>").text(car_types[this.car_type]).appendTo(info_panel);
                 }
                 $("<div class='playerlist_status'></div>").text(this.status).appendTo(info_panel);
@@ -308,7 +316,7 @@ jcn.socket.on("refresh_room", function(data) {
         });
         $(".playerlist").append("<div class='clear'></div>");
 
-        team_selector.val(get_self().team);
+        team_selector.set_team(get_self().team);
     }
 });
 //Game
@@ -328,7 +336,7 @@ var _keyMap = {
 jcn.socket.on(GAME_START, function(data) {
     if(data.id == room.id) {
         jcu.reset();
-        jcg.initialize(data);
+        jcg.initialize(data, {quality: _graphics_quality, all_colors: jcu.all_colors});
         keyStatus = 0;
         alive = true;
         $('body').keydown(function (e) {
@@ -360,7 +368,7 @@ jcn.socket.on(GAME_START, function(data) {
     }
 });
 jcn.socket.on(GAME_REFRESH, function (data) {
-    jcg.draw(data, room, {shadow: _shadow_quality, all_colors: jcu.all_colors});
+    jcg.draw(data, room, {quality: _graphics_quality, all_colors: jcu.all_colors});
     if(alive && data[INDEX_HP][data[INDEX_INDEX]] == 0) {
         alive = false;
         keyCapture = null;

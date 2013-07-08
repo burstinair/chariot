@@ -6,7 +6,6 @@ var gen_player_info_panel = function () {
     res.update = function (data) {
         
     };
-    player_info_panels.push(res);
     return res;
 };
 
@@ -45,10 +44,14 @@ window.jschariot_ui = {
     },
     show_subtitles: true,
     all_colors: true,
-    refresh: function (type, data, player_infos, boxes_data, start_time, room, _get_car, game_status) {
+    last_all_colors: false,
+    refresh: function (type, data, player_infos, boxes_data, car_init_data, start_time, room, _get_car, game_status) {
 
-        var self_index = data[INDEX_INDEX];
-        var self_team = data[INDEX_CARS][self_index][INDEX_TEAM];
+        //game_status
+        if(game_status == STATUS_LOADING) {
+            $(".tip").text("载入中...").css("background", "#f8f8f8").addClass("tip_loading").show();
+            return;
+        }
 
         //time
         var last = Math.floor((new Date().getTime() - start_time) / 1000);
@@ -57,8 +60,10 @@ window.jschariot_ui = {
             $(".time").text(cur_time);
             last_time = cur_time;
         }
-        
+
         //hp
+        var self_index = data[INDEX_INDEX];
+        var self_team = car_init_data[data[INDEX_CARS][self_index][INDEX_CAR_ID]].team;
         var hp = data[INDEX_HP][self_index];
         var cur_hp = [0, 0, 0];
         for(var i = 3; i > 0; --i) {
@@ -67,7 +72,7 @@ window.jschariot_ui = {
             } else {
                 cur_hp[i - 1] = 1;
             }
-            if(cur_hp[i - 1] != last_hp[i - 1]) {
+            if(cur_hp[i - 1] != last_hp[i - 1] || this.last_all_colors != this.all_colors) {
                 if(hp < i) {
                     $(".hp" + i).css('background', '#f8f8f8');
                 } else if(this.all_colors) {
@@ -77,13 +82,10 @@ window.jschariot_ui = {
                 }
             }
         }
+        this.last_all_colors = this.all_colors;
         last_hp = cur_hp;
-        
-        //game_status
-        if(game_status == STATUS_LOADING) {
-            $(".tip").text("载入中...").css("background", "#f8f8f8").addClass("tip_loading").show();
-            return;
-        } else if(data[INDEX_EVENTS].indexOf(EVENT_GAME_END) != -1) {
+
+        if(data[INDEX_EVENTS].indexOf(EVENT_GAME_END) != -1) {
             $(".tip").removeClass("tip_loading");
             if(data[INDEX_EVENTS].indexOf(EVENT_DRAW) != -1) {
                 $(".tip").text("平局。").css("background", "#fea").show();
@@ -99,6 +101,7 @@ window.jschariot_ui = {
                 return;
             }
         } else if(hp == 0) {
+            $(".tip").removeClass("tip_loading");
             $(".tip").text("你阵亡了").css("background", "#ccf").show();
             return;
         }
@@ -126,64 +129,56 @@ window.jschariot_ui = {
         last_cd = w;
         
         //map
-        for(var i = 0, l = boxes_data.length - map_box.length; i < l; ++i) {
-            map_box.push($("<div class='map_box'></div>").appendTo($("#player_status .map")));
-        }
-        for(var i = boxes_data.length, l = map_box.length; i < l; ++i) {
-            map_box[i].hide();
-        }
-        $.each(boxes_data, function (i, data) {
+        $.sync_cache(boxes_data, map_box, function () {
+            return $("<div class='map_box'></div>").appendTo($("#player_status .map"));
+        }, function () {
+            this.hide();
+        }, function (data, cache) {
             if(data.v) {
                 if(first_set) {
                     var _x = 95 + data.x / 40;
                     var _z = 95 - data.z / 40;
-                    map_box[i].css("left", _x);
-                    map_box[i].css("top", _z);
+                    cache.css("left", _x);
+                    cache.css("top", _z);
                 }
-                map_box[i].show();
+                cache.show();
             } else {
-                map_box[i].hide();
+                cache.hide();
             }
         });
         first_set = false;
-        for(var i = 0, l = data[INDEX_CARS].length - map_car.length; i < l; ++i) {
-            map_car.push($("<div class='map_car'></div>").appendTo($("#player_status .map")));
-        }
-        for(var i = data[INDEX_CARS].length, l = map_car.length; i < l; ++i) {
-            map_car[i].hide();
-        }
-        for(var i = 0, l = data[INDEX_CARS].length; i < l; ++i) {
-            var car_data = data[INDEX_CARS][i];
+
+        $.sync_cache(data[INDEX_CARS], map_car, function () {
+            return $("<div class='map_car'></div>").appendTo($("#player_status .map"));
+        }, function () {
+            this.hide();
+        }, $.proxy(function (car_data, cache, index) {
             var _x = 93 + car_data[INDEX_X] / 40;
             var _z = 93 - car_data[INDEX_Z] / 40;
-            if(i == data[INDEX_INDEX]) {
-                map_car[i].addClass('self');
-                map_car[i].css("background", '#eee');
+            if(index == data[INDEX_INDEX]) {
+                cache.addClass('self');
+                cache.css("background", '#eee');
                 --_x;
                 --_z;
             } else {
-                map_car[i].removeClass('self');
+                cache.removeClass('self');
                 if(this.all_colors) {
-                    map_car[i].css("background", '#' + TEAM_COLORS[car_data[INDEX_TEAM]].toString(16));
+                    cache.css("background", '#' + TEAM_COLORS[car_init_data[car_data[INDEX_CAR_ID]].team].toString(16));
                 } else {
-                    map_car[i].css("background", car_data[INDEX_TEAM] == self_team ? '#66c' : '#c66');
+                    cache.css("background", car_init_data[car_data[INDEX_CAR_ID]].team == self_team ? '#66c' : '#c66');
                 }
             }
-            map_car[i].css("left", _x);
-            map_car[i].css("top", _z);
-            map_car[i].show();
-        }
+            cache.css("left", _x);
+            cache.css("top", _z);
+            cache.show();
+        }, this));
         
         //player_infos
-        for(var i = 0, l = player_infos.length - player_info_panels.length; i < l; ++i) {
-            gen_player_info_panel();
-        }
-        for(var i = player_infos.length, l = player_info_panels.length; i < l; ++i) {
-            player_info_panels[i].hide();
-        }
-        for(var i = 0, l = player_infos.length; i < l; ++i) {
-            player_info_panels[i].update(player_infos[i]);
-        }
+        $.sync_cache(player_infos, player_info_panels, gen_player_info_panel, function () {
+            this.hide();
+        }, function (data, cache) {
+            cache.update(data);
+        });
 
         //events
         if(this.show_subtitles) {
@@ -210,11 +205,11 @@ window.jschariot_ui = {
                 if(events[k] instanceof Array) {
                     var text = null;
                     if(events[k][0] == EVENT_HIT_TRAP) {
-                        text = _get_car(data[INDEX_CARS][events[k][2]][INDEX_TYPE]).trap_msg(
+                        text = _get_car(car_init_data[data[INDEX_CARS][events[k][2]][INDEX_CAR_ID]].type).trap_msg(
                             room.players[events[k][2]].name, room.players[events[k][1]].name
                         );
                     } else if(events[k][0] == EVENT_HIT_MISSILE) {
-                        text = _get_car(data[INDEX_CARS][events[k][2]][INDEX_TYPE]).missile_msg(
+                        text = _get_car(car_init_data[data[INDEX_CARS][events[k][2]][INDEX_CAR_ID]].type).missile_msg(
                             room.players[events[k][2]].name, room.players[events[k][1]].name
                         );
                     }

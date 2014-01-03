@@ -7,5 +7,9 @@
   },
   "engines": {
     "node": "0.10.5"
+  },
+  "subdomain": "chariot",
+  "scripts": {
+    "start": "app.js"
   }
 }

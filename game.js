@@ -2,7 +2,9 @@
     Network = require('./network'),
     KeyStatus = require('./key_status'),
     ModelManager = require('./model_manager'),
-    Utils = require('./utils');
+    Utils = require('./utils'),
+    AiParam = require('./ai_param'),
+    VM = require('vm');
 
 var ANGLE_RATIO = 180 / Math.PI;
 
@@ -114,7 +116,18 @@ Game.prototype.start = function () {
         game.run();
         for(var i = 0, l = game.room.players.length; i < l; ++i) {
             if(game.room.players[i].isAI) {
-                game.room.players[i].run(game, i);
+                var ai = game.room.players[i];
+                setTimeout(function () {
+                    var r_sandbox = {
+                        param: new AiParam(game, i),
+                        ai_sandbox: ai.ai_sandbox
+                    };
+                    var r_context = VM.createContext(r_sandbox);
+                    VM.runInContext('this.ai_sandbox.param = param;', r_context);
+                    VM.runInContext('this.keystatus = this.run(this.param);', ai.ai_context);
+                    VM.runInContext('this.keystatus = this.ai_sandbox.keystatus;', r_context);
+                    ai.keystatus = r_sandbox.keystatus;
+                }, 10);
             } else {
                 game.room.players[i].socket.volatile.emit(GAME_REFRESH, game.gen_msg(i));
             }

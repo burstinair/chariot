@@ -5,7 +5,8 @@ var Network = require('./network'),
     Room = require('./room'),
     Player = require('./player'),
     AI = require('./ai'),
-    Config = require('./config');
+    Config = require('./config'),
+    VM = require('vm');
 
 Network.on('connection', function (socket) {
     Room.refresh();
@@ -85,6 +86,42 @@ Network.on('connection', function (socket) {
             if(player != null) {
                 socket.emit("reply_set_team", {suc: true});
                 player.team = data;
+                player.room.refresh();
+                player.room.check_start_game();
+            }
+        });
+    });
+    //ai对战
+    socket.on('set_ai_code', function (data) {
+        socket.get('playerinfo', function (err, player) {
+            if(player != null) {
+                if(data.setAI) {
+                    player.ai_code = data.code;
+                    player.ai_sandbox = {};
+                    player.ai_context = VM.createContext(player.ai_sandbox);
+                    VM.runInContext(player.ai_code, player.ai_context);
+                    player.isAI = true;
+                    player.__bak_name = player.name;
+                    player.__bak_car_type = player.car_type;
+                    
+                    var r_sandbox = {
+                        ai_sandbox: player.ai_sandbox
+                    };
+                    VM.runInNewContext('this.name = this.ai_sandbox.name; this.car_type = this.ai_sandbox.car_type; this.run = this.ai_sandbox.run;', r_sandbox);
+                    if(r_sandbox.name != null) {
+                        player.name = r_sandbox.name;
+                    }
+                    if(r_sandbox.car_type != null) {
+                        player.car_type = r_sandbox.car_type;
+                    }
+                    
+                } else {
+                    player.ai_code = null;
+                    player.isAI = false;
+                    player.name = player.__bak_name;
+                    player.car_type = player.__bak_car_type;
+                    player.run = null;
+                }
                 player.room.refresh();
                 player.room.check_start_game();
             }

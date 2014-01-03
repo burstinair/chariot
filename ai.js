@@ -22,9 +22,11 @@ function AI() {
     return newai;
 }
 
-AI.prototype.run = function (game, keystatus) {
-    
-}
+AI.prototype.ai_sandbox = {
+    run: function (param) {
+        //TODO return keystatus;
+    }
+};
 
 AI.prototype.__proto__ = Player.prototype;
 

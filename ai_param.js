@@ -44,12 +44,12 @@ function AiParam(game, index) {
                 return player.items[i];
             }
             return -1;
-        });
+        };
     }
     this.get_car = function (i) {
         return new CarGetter(game.players[i], game.cars[i], i == index);
     };
-    this.__defineGetter('cars_count', function () {
+    this.__defineGetter__('cars_count', function () {
         game.cars.length;
     });
     
@@ -59,7 +59,7 @@ function AiParam(game, index) {
     this.get_boxes = function (i) {
         return new BoxGetter(game.boxes[i]);
     };
-    this.__defineGetter('boxes_count', function () {
+    this.__defineGetter__('boxes_count', function () {
         game.boxes.length;
     });
     
@@ -69,7 +69,7 @@ function AiParam(game, index) {
     this.get_missiles = function (i) {
         return new MissileGetter(game.missiles[i]);
     };
-    this.__defineGetter('missiles_count', function () {
+    this.__defineGetter__('missiles_count', function () {
         game.missiles.length;
     });
     
@@ -79,7 +79,7 @@ function AiParam(game, index) {
     this.get_traps = function (i) {
         return new TrapGetter(game.traps[i]);
     };
-    this.__defineGetter('traps_count', function () {
+    this.__defineGetter__('traps_count', function () {
         game.traps.length;
     });
     

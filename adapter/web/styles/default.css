@@ -101,6 +101,29 @@ a
 {
     display : none;
 }
+.room #dialog-aicode
+{
+    display : none;
+}
+#dialog-aicode .tip
+{
+    color : #888888;
+}
+#dialog-aicode .tip a
+{
+    margin-left : 2px;
+    color : #666666;
+}
+#dialog-aicode .tip a:hover,
+#dialog-aicode .tip a:active
+{
+    color : #444444;
+}
+#dialog-aicode #input-aicode
+{
+    width : 500px;
+    min-height : 200px;
+}
 .room .playerlist
 {
     margin-top : 5px;

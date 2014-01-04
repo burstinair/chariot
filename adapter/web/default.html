@@ -29,12 +29,17 @@
                     <input class="nicknameinput" />
                     <input type="button" value="加入" class="joinbutton" />
                     <input type="button" value="创建" class="createbutton" />
-                    <input type="button" value="创建AI对战房间" class="createaibutton" />
                 </div>
                 <div class="roomlist">
                 </div>
             </div>
             <div class="room">
+                <div id="dialog-aicode" title="AI代码">
+                    <span class="tip">AI代码文档见<a target="_blank" href="https://github.com/burstinair/chariot/wiki/AI-%E4%BB%A3%E7%A0%81%E8%AF%B4%E6%98%8E">AI代码说明</a></span>
+                    <textarea id="input-aicode">
+                        run=function(){return 0x80}
+                    </textarea>
+                </div>
                 <div class="actions">
                     <span class="roomtitle">xxx的房间</span>
                     <input type="button" value="退出" class="quitbutton" />

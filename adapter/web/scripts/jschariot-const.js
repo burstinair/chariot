@@ -60,4 +60,8 @@ window.EVENT_OPEN_HOODS = "oh";
 window.EVENT_HIT_HOODS = "hh";
 window.EVENT_DRIFT = "dft";
 
+window.TYPE_PLAYER = 0;
+window.TYPE_AI_PLAYER = 1;
+window.TYPE_AI_SERVER = 2;
+
 })(jQuery, window);

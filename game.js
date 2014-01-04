@@ -1,5 +1,6 @@
 ﻿var Config = require('./config'),
     Network = require('./network'),
+    Player = require('./player'),
     KeyStatus = require('./key_status'),
     ModelManager = require('./model_manager'),
     Utils = require('./utils'),
@@ -115,28 +116,25 @@ Game.prototype.start = function () {
     game.ticker = setInterval(function () {
         game.run();
         for(var i = 0, l = game.room.players.length; i < l; ++i) {
-            if(game.room.players[i].isAI) {
-                var ai = game.room.players[i];
-                setTimeout(function () {
-                    var r_sandbox = {
-                        param: new AiParam(game, i),
-                        ai_sandbox: ai.ai_sandbox
+            var cur_player = game.room.players[i];
+            if(cur_player.type == Player.TYPE_AI_PLAYER || cur_player.type == Player.TYPE_AI_SERVER) {
+                setTimeout((function (player, index) {
+                    return function () {
+                        player.ai_sandbox.param = new AiParam(game, index);
+                        VM.runInNewContext('__keystatus = run(param)', player.ai_sandbox);
+                        game.refresh_key_status(player, player.ai_sandbox.__keystatus);
                     };
-                    var r_context = VM.createContext(r_sandbox);
-                    VM.runInContext('this.ai_sandbox.param = param;', r_context);
-                    VM.runInContext('this.keystatus = this.run(this.param);', ai.ai_context);
-                    VM.runInContext('this.keystatus = this.ai_sandbox.keystatus;', r_context);
-                    ai.keystatus = r_sandbox.keystatus;
-                }, 10);
-            } else {
-                game.room.players[i].socket.volatile.emit(GAME_REFRESH, game.gen_msg(i));
+                })(cur_player, i), 10);
+            }
+            if(cur_player.type == Player.TYPE_PLAYER || cur_player.type == Player.TYPE_AI_PLAYER) {
+                cur_player.socket.volatile.emit(GAME_REFRESH, game.gen_msg(i));
             }
         }
         if(game.ended) {
             game.end();
             setTimeout(function () {
                 for(var i = 0, l = game.room.players.length; i < l; ++i) {
-                    if(!game.room.players[i].isAI) {
+                    if(game.room.players[i].type == Player.TYPE_AI_SERVER) {
                         game.room.players[i].socket.emit(GAME_END);
                     }
                 }
@@ -145,28 +143,31 @@ Game.prototype.start = function () {
         }
     }, 1000 / Config.fps);
     for(var i = 0, l = game.room.players.length; i < l; ++i) {
-        if(!game.room.players[i].isAI) {
+        if(game.room.players[i].type != Player.TYPE_AI_SERVER) {
             start_msg.index = i;
             game.room.players[i].socket.emit(GAME_START, start_msg);
         }
     }
-}
+};
 Game.prototype.end = function () {
     clearInterval(this.ticker);
     this.room.game = null;
     this.room.is_in_game = false;
     for(var i = 0; i < this.room.players.length; i++) {
-        if(this.room.players[i].isAI) {
+        if(this.room.players[i] == Player.TYPE_AI_SERVER) {
             this.room.players.splice(i, 1);
             i--;
         } else {
-            this.room.players[i].status = '未准备';
+            this.room.players[i].is_ready = false;
         }
     }
-}
+};
 Game.prototype.refresh_key_status = function (room_player, data) {
-    this.players[this.room.players.indexOf(room_player)].key.data = data;
-}
+    var game_player = this.players[this.room.players.indexOf(room_player)];
+    if(game_player) {
+        game_player.key.data = data;
+    }
+};
 
 exports = module.exports = Game;
 

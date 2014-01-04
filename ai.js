@@ -14,17 +14,18 @@ function AI() {
             address: 'AI',
             port: '一般难度'
         },
-        status: '已准备',
-        isAI: true,
+        is_ready: true,
+        type: Player.TYPE_AI_SERVER,
         room: null,
         team: null,
         ai_sandbox: {
             run: function (param) {
+                var res = 0x80;
+                return res;
                 //TODO return keystatus;
             }
         }
     };
-    newai.ai_context = VM.createContext(newai.ai_sandbox);
     newai.__proto__ = AI.prototype;
     return newai;
 }

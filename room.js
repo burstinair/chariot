@@ -1,5 +1,6 @@
 var Network = require('./network'),
     Game = require('./game'),
+    Player = require('./player'),
     ModelManager = require('./model_manager'),
     EventEmitter = process.EventEmitter;
 
@@ -36,10 +37,10 @@ Room.prototype.gen_msg = function () {
 Room.prototype.add_player = function (player) {
     player.room = this;
     player.team = this.next_team();
-    if(player.isAI) {
-        player.status = "已准备";
+    if(player.type == Player.TYPE_AI_SERVER) {
+        player.is_ready = true;
     } else {
-        player.status = "未准备";
+        player.is_ready = false;
     }
     this.players.push(player);
     this.refresh();
@@ -53,7 +54,7 @@ Room.prototype.quit_player = function (player) {
     this.refresh();
     var remain = 0;
     for(var i = 0; i < this.players.length; i++) {
-        if(!this.players[i].isAI) {
+        if(this.players[i].type != Player.TYPE_AI_SERVER) {
             remain++;
         }
     }
@@ -70,7 +71,7 @@ Room.prototype.check_start_game = function () {
     var teams = {};
     var i = 0, team_count = 0;
     for(i = 0; i < this.players.length; i++) {
-        if(this.players[i].status == "未准备")
+        if(this.players[i].is_ready == false)
             break;
         if(!teams[this.players[i].team]) {
             teams[this.players[i].team] = true;

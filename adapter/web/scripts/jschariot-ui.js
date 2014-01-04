@@ -236,6 +236,27 @@ $(".room .car_select").change(function () {
 $(".room .addaibutton").click(function () {
     jcn.request(null, "addai", null, $.noop);
 });
+$(".room .setaicodebutton").click(function () {
+    $("#dialog-aicode").dialog({
+        modal: true,
+        minWidth: 540,
+        minHeight: 220,
+        buttons: {
+            "确定": function () {
+                jcn.request(null, "use_ai_code", {set_ai: true, code: $("#input-aicode").val()}, $.noop);
+                $(this).dialog("close");
+            },
+            "关闭AI": function () {
+                $("#input-aicode").val('');
+                jcn.request(null, "use_ai_code", {set_ai: false}, $.noop);
+                $(this).dialog("close");
+            },
+            "取消": function () {
+                $(this).dialog("close");
+            }
+        }
+    });
+});
 $('.room .actions').append('队伍：');
 var team_selector = gen_team_selector();
 team_selector.change(function (event, team) {
@@ -298,7 +319,7 @@ jcn.socket.on("refresh_room", function(data) {
                 var info_panel = $("<div class='playerlist_info'></div>").appendTo(_citem);
                 $("<div class='playerlist_name'></div>").text(this.name).appendTo(info_panel);
                 $("<div class='playerlist_ip'></div>").text(this.ip.address + ':' + this.ip.port).appendTo(info_panel);
-                if(this.ai) {
+                if(this.type == TYPE_AI_SERVER) {
                     gen_team_selector().set_team(this.team).addClass('team_selector_single_line').change(function (event, team) {
                         jcn.request('', 'set_ai_team', {index: index, team: team}, $.noop);
                     }).appendTo(info_panel);
@@ -310,7 +331,7 @@ jcn.socket.on("refresh_room", function(data) {
                     gen_team_selector(false).set_team(this.team).addClass('team_selector_single_line').appendTo(info_panel);
                     $("<div class='playerlist_car_type'></div>").text(car_types[this.car_type]).appendTo(info_panel);
                 }
-                $("<div class='playerlist_status'></div>").text(this.status).appendTo(info_panel);
+                $("<div class='playerlist_status'></div>").text(this.ready ? "已准备" : "未准备").appendTo(info_panel);
                 $(".playerlist").append(_citem);
             }
         });

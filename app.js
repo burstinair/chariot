@@ -48,7 +48,7 @@ Network.on('connection', function (socket) {
         socket.get('playerinfo', function (err, player) {
             if(player != null) {
                 socket.emit("reply_ready", {suc: true});
-                player.status = "已准备";
+                player.is_ready = true;
                 player.room.refresh();
                 player.room.check_start_game();
             }
@@ -92,34 +92,31 @@ Network.on('connection', function (socket) {
         });
     });
     //ai对战
-    socket.on('set_ai_code', function (data) {
+    socket.on('use_ai_code', function (data) {
         socket.get('playerinfo', function (err, player) {
             if(player != null) {
-                if(data.setAI) {
+                if(data.set_ai) {
                     player.ai_code = data.code;
                     player.ai_sandbox = {};
-                    player.ai_context = VM.createContext(player.ai_sandbox);
-                    VM.runInContext(player.ai_code, player.ai_context);
-                    player.isAI = true;
+                    VM.runInNewContext(player.ai_code, player.ai_sandbox);
+                    player.type = Player.TYPE_AI_PLAYER;
                     player.__bak_name = player.name;
                     player.__bak_car_type = player.car_type;
-                    
-                    var r_sandbox = {
-                        ai_sandbox: player.ai_sandbox
-                    };
-                    VM.runInNewContext('this.name = this.ai_sandbox.name; this.car_type = this.ai_sandbox.car_type; this.run = this.ai_sandbox.run;', r_sandbox);
-                    if(r_sandbox.name != null) {
-                        player.name = r_sandbox.name;
+                    if(player.ai_sandbox.name != null) {
+                        player.name = player.ai_sandbox.name;
                     }
-                    if(r_sandbox.car_type != null) {
-                        player.car_type = r_sandbox.car_type;
+                    if(player.ai_sandbox.car_type != null) {
+                        player.car_type = player.ai_sandbox.car_type;
                     }
-                    
                 } else {
                     player.ai_code = null;
-                    player.isAI = false;
-                    player.name = player.__bak_name;
-                    player.car_type = player.__bak_car_type;
+                    player.type = Player.TYPE_PLAYER;
+                    if(player.__bak_name != null) {
+                        player.name = player.__bak_name;
+                    }
+                    if(player.__bak_car_type != null) {
+                        player.car_type = player.__bak_car_type;
+                    }
                     player.run = null;
                 }
                 player.room.refresh();
@@ -131,7 +128,7 @@ Network.on('connection', function (socket) {
         socket.get('playerinfo', function (err, player) {
             if(player != null) {
                 var ai = player.room.players[data.index];
-                if(ai && ai.isAI) {
+                if(ai && ai.type == Player.TYPE_AI_SERVER) {
                     socket.emit("reply_set_ai_car", {suc: true});
                     ai.car_type = data.type;
                     player.room.refresh();
@@ -143,7 +140,7 @@ Network.on('connection', function (socket) {
         socket.get('playerinfo', function (err, player) {
             if(player != null) {
                 var ai = player.room.players[data.index];
-                if(ai && ai.isAI) {
+                if(ai && ai.type == Player.TYPE_AI_SERVER) {
                     socket.emit("reply_set_ai_team", {suc: true});
                     ai.team = data.team;
                     player.room.refresh();

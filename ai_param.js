@@ -1,11 +1,13 @@
 var ModelManager = require('./model_manager');
 
 var defineGetters = function (obj, refer, properties) {
-    for(var i in properties) {
+    for(var i = 0, l = properties.length; i < l; ++i) {
         var p = properties[i];
-        obj.__defineGetter__(p, function () {
-            return refer[p];
-        });
+        obj.__defineGetter__(p, (function (prop) {
+            return function () {
+                return refer[prop];
+            };
+        })(p));
     }
 };
 
@@ -50,7 +52,7 @@ function AiParam(game, index) {
         return new CarGetter(game.players[i], game.cars[i], i == index);
     };
     this.__defineGetter__('cars_count', function () {
-        game.cars.length;
+        return game.cars.length;
     });
     
     function BoxGetter(box) {
@@ -60,7 +62,7 @@ function AiParam(game, index) {
         return new BoxGetter(game.boxes[i]);
     };
     this.__defineGetter__('boxes_count', function () {
-        game.boxes.length;
+        return game.boxes.length;
     });
     
     function MissileGetter(missile) {
@@ -70,7 +72,7 @@ function AiParam(game, index) {
         return new MissileGetter(game.missiles[i]);
     };
     this.__defineGetter__('missiles_count', function () {
-        game.missiles.length;
+        return game.missiles.length;
     });
     
     function TrapGetter(trap) {
@@ -80,7 +82,7 @@ function AiParam(game, index) {
         return new TrapGetter(game.traps[i]);
     };
     this.__defineGetter__('traps_count', function () {
-        game.traps.length;
+        return game.traps.length;
     });
     
     function MapGetter(map_model) {

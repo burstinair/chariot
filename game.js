@@ -154,7 +154,7 @@ Game.prototype.end = function () {
     this.room.game = null;
     this.room.is_in_game = false;
     for(var i = 0; i < this.room.players.length; i++) {
-        if(this.room.players[i] == Player.TYPE_AI_SERVER) {
+        if(this.room.players[i].type == Player.TYPE_AI_SERVER) {
             this.room.players.splice(i, 1);
             i--;
         } else {

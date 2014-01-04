@@ -97,9 +97,11 @@ var _gen_car_geometry = function (da) {
     return res;
 };
 
-var loadMaterial = function () {
-    var texture = THREE.ImageUtils.loadTexture("images/textures/cars/2/car.jpg");
-    _material = new THREE.MeshPhongMaterial({ambient: 0xffffff, shininess: 100, map: texture});
+var loadMaterial = function (callback) {
+    var texture = THREE.ImageUtils.loadTexture("images/textures/cars/2/car.jpg", { }, function () {
+        _material = new THREE.MeshPhongMaterial({ambient: 0xffffff, shininess: 100, map: texture});
+        callback();
+    });
     //_material = new THREE.MeshLambertMaterial({color: 0xcc6622});
     //_material = new THREE.MeshPhongMaterial({color: 0x886644, specular: 0x333333, shininess: 100});
     //_material = new THREE.MeshPhongMaterial({color: 0xcc6622});
@@ -139,13 +141,13 @@ var _reset = function (lock) {
     });
     //loader.load("images/textures/cars/1/13.obj", "images/textures/cars/1/13.mtl");
 
-    loadMaterial();
+    loadMaterial(function () {
+        _turn_right_car = _gen_car_geometry(1);
+        _turn_left_car = _gen_car_geometry(-1);
+        _normal_car = _gen_car_geometry(0);
 
-    _turn_right_car = _gen_car_geometry(1);
-    _turn_left_car = _gen_car_geometry(-1);
-    _normal_car = _gen_car_geometry(0);
-
-    lock.start();
+        lock.start();
+    });
 };
 _reset($.lock(true, function () {
     jcg_webgl.set_car_model("2", {

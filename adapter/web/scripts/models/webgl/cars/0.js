@@ -100,9 +100,11 @@ var _gen_car_geometry = function (da) {
     return res;
 };
 
-var loadMaterial = function () {
-    var texture = THREE.ImageUtils.loadTexture("images/textures/cars/0/car.jpg");
-    _material = new THREE.MeshPhongMaterial({color: 0xdddd66, specular: 0x333333, shininess: 100, map: texture});
+var loadMaterial = function (callback) {
+    var texture = THREE.ImageUtils.loadTexture("images/textures/cars/0/car.jpg", { }, function () {
+        _material = new THREE.MeshPhongMaterial({color: 0xdddd66, specular: 0x333333, shininess: 100, map: texture});
+        callback();
+    });
     //_material = new THREE.MeshLambertMaterial({color: 0xcc6622, morphTargets: true, morphNormals: true});
     //_material = new THREE.MeshPhongMaterial({color: 0xffffff, specular: 0xffffff, shininess: 20, morphTargets: true, morphNormals: true, vertexColors: THREE.FaceColors, shading: THREE.SmoothShading});
     //_material = new THREE.MeshPhongMaterial({color: 0x886644, specular: 0x333333, shininess: 100});
@@ -119,7 +121,7 @@ var _reset = function (lock) {
         _trap_cache = geometry;
         _trap_material = new THREE.MeshFaceMaterial(materials);
         trap_lock.done();
-    })
+    });
 
     var trap_lock_safe = lock.require();
     loader.load("images/textures/cars/0/trap_safe.js", function (geometry, materials) {
@@ -143,13 +145,13 @@ var _reset = function (lock) {
     //adjust.makeRotationX(-Math.PI / 2);
     //_missile_cache.applyMatrix(adjust);
 
-    loadMaterial();
+    loadMaterial(function () {
+        _turn_right_car = _gen_car_geometry(1);
+        _turn_left_car = _gen_car_geometry(-1);
+        _normal_car = _gen_car_geometry(0);
 
-    _turn_right_car = _gen_car_geometry(1);
-    _turn_left_car = _gen_car_geometry(-1);
-    _normal_car = _gen_car_geometry(0);
-
-    lock.start();
+        lock.start();
+    });
 };
 _reset($.lock(true, function () {
     jcg_webgl.set_car_model("0", {

@@ -134,7 +134,7 @@ Game.prototype.start = function () {
             game.end();
             setTimeout(function () {
                 for(var i = 0, l = game.room.players.length; i < l; ++i) {
-                    if(game.room.players[i].type == Player.TYPE_AI_SERVER) {
+                    if(game.room.players[i].type != Player.TYPE_AI_SERVER) {
                         game.room.players[i].socket.emit(GAME_END);
                     }
                 }

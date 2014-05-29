@@ -13,7 +13,7 @@ function Player(socket, data)
         id: player_next_id++,
         car_type: '0',
         name: data.name,
-        ip: socket.remoteAddress,
+        ip: socket.handshake.address,
         is_ready: false,
         type: 0,
         room: null,

@@ -2,18 +2,13 @@ var express = require('express'),
     http = require('http'),
     app = express(),
     server = http.Server(app),
-    io = require('socket.io').listen(server),
-    socket = require('socket.io').Socket;
+    io = require('socket.io')(server);
 
 //For Heroku  
 //io.configure(function () { 
 //  io.set("transports", ["xhr-polling"]); 
 //  io.set("polling duration", 10); 
 //});
-
-socket.prototype.__defineGetter__("remoteAddress", function () {
-    return this.handshake.address;
-});
 
 var adapter_web = {
     on: function (name, func) {
@@ -24,14 +19,10 @@ var adapter_web = {
     },
     start: function (options) {
         server.listen(options.port);
+        app.use(express.static(__dirname + '/web'));
         app.get('/', function (req, res) {
-            console.log('req');
+            console.log('new web request');
             res.sendfile(__dirname + '/web/default.html');
-        });
-        app.configure(function () {
-            app.use(express.bodyParser());
-            app.use(express.methodOverride());
-            app.use(express.static(__dirname + '/web'));
         });
     }
 };

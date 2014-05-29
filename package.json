@@ -2,11 +2,11 @@
   "name": "chariot",
   "version": "0.0.2",
   "dependencies": {
-    "express": "3.0.0",
-    "socket.io": "0.9.13"
+    "express": "*",
+    "socket.io": "*"
   },
   "engines": {
-    "node": "0.10.5"
+    "node": "*"
   },
   "subdomain": "chariot",
   "scripts": {
